@@ -12,14 +12,13 @@ import gov.nasa.jpf.vm.MethodInfo;
  */
 public class JOPUtil {
 
-
 	private static final int r = 1;
 	private static final int w = 1;
 	private static int n;
 	
 	/*
 	 * This is for computing the MethodSwitchCost when conducting method calls
-	 * TODO; incorporate this into the analysis
+	 * TODO incorporate this into the analysis
 	 */
 	public static int calculateI(boolean hit, int n) {
 		int c = r-1;

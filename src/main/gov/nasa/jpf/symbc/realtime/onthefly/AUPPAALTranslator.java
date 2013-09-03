@@ -5,7 +5,7 @@ package gov.nasa.jpf.symbc.realtime.onthefly;
 
 import gov.nasa.jpf.Config;
 import gov.nasa.jpf.jvm.bytecode.IfInstruction;
-import gov.nasa.jpf.symbc.realtime.MethodDesc;
+import gov.nasa.jpf.symbc.symexectree.MethodDesc;
 import gov.nasa.jpf.symbc.symexectree.SymExecTreeUtils;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.StackFrame;

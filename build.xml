@@ -48,6 +48,7 @@
 
     <!-- our own classes and libs come first -->
     <pathelement location="build/main"/>
+    <pathelement location="build/example"/>
     <!-- we don't have these
     <pathelement location="build/peers"/>
     -->
@@ -150,7 +151,7 @@
     </javac>
   </target>
 
-  <target name="-compile-tests" if="have_tests" depends="-compile-annotations,-compile-main">
+  <target name="-compile-tests" if="have_tests" depends="-compile-annotations,-compile-main,-compile-examples">
     <mkdir dir="build/tests"/>
     <javac srcdir="src/tests" destdir="build/tests"
            debug="${debug}" source="${src_level}" deprecation="${deprecation}"
@@ -161,6 +162,7 @@
       	<pathelement location="../jpf-symbc/build/tests"/>
         <pathelement location="build/classes"/>
         <pathelement location="build/annotations"/>
+        <pathelement location="build/examples"/>
       </classpath>
     </javac>
   </target>

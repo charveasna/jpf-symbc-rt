@@ -1,0 +1,16 @@
+target=gov.nasa.jpf.symbc.realtime.simple.ControlFlowSys
+
+classpath=${jpf-symbc-rt}/build/tests
+
+sourcepath=${jpf-symbc-rt}/src/tests
+
+#symbolic.minint=-25
+#symbolic.maxint=25
+#symbolic.undefined=-100
+symbolic.method = gov.nasa.jpf.symbc.realtime.ControlFlowSys.computation(sym)
+listener = gov.nasa.jpf.symbc.realtime.UppaalTranslationListener
+symbolic.realtime = true
+symbolic.realtime.baseoutputpath = ./output
+symbolic.realtime.concretemodel = false
+symbolic.realtime.platform = jop
+
