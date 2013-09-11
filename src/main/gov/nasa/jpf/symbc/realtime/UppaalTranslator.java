@@ -8,9 +8,10 @@ import gov.nasa.jpf.jvm.bytecode.InvokeInstruction;
 import gov.nasa.jpf.jvm.bytecode.ReturnInstruction;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasBCET;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasWCET;
-import gov.nasa.jpf.symbc.symexectree.Node;
-import gov.nasa.jpf.symbc.symexectree.SymbolicExecutionTree;
+import gov.nasa.jpf.symbc.symexectree.MethodDesc;
 import gov.nasa.jpf.symbc.symexectree.Transition;
+import gov.nasa.jpf.symbc.symexectree.structure.Node;
+import gov.nasa.jpf.symbc.symexectree.structure.SymbolicExecutionTree;
 import gov.nasa.jpf.symbc.symexectree.visualizer.PrettyPrinterException;
 import gov.nasa.jpf.vm.Instruction;
 
@@ -48,7 +49,7 @@ public class UppaalTranslator {
 	public NTA translateSymTree(SymbolicExecutionTree tree) {
 		this.visitedTreeNodesMap = new HashMap<Node, Location>(); 
 		
-		Automaton ta = new Automaton(tree.getTargetMethod().getShortMethodName());
+		Automaton ta = new Automaton(getTemplateName(tree.getTargetMethod()));
 		Location initLoc = new Location(ta, "initLoc");
 		ta.setInit(initLoc);
 		this.finalLoc = new Location(ta, "final");
@@ -73,6 +74,18 @@ public class UppaalTranslator {
 		}
 		nta.addAutomaton(ta);
 		return nta;
+	}
+	
+	private String getTemplateName(MethodDesc mDesc) {
+		String[] splitMethDesc = mDesc.getMethodName().split("\\.");
+		String templateName;
+		if(splitMethDesc.length > 1) {
+			templateName = splitMethDesc[splitMethDesc.length - 2] + "_" + splitMethDesc[splitMethDesc.length - 1]; 
+		} else {
+			templateName = splitMethDesc[splitMethDesc.length - 1];
+		}
+		
+		return templateName + "_" + mDesc.getArgsNum();
 	}
 	
 	private String getUniqueIDString() {

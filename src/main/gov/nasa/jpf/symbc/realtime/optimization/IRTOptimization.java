@@ -3,7 +3,7 @@
  */
 package gov.nasa.jpf.symbc.realtime.optimization;
 
-import gov.nasa.jpf.symbc.symexectree.SymbolicExecutionTree;
+import gov.nasa.jpf.symbc.symexectree.structure.SymbolicExecutionTree;
 
 /**
  * @author Kasper S. Luckow <luckow@cs.aau.dk>

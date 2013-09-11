@@ -11,13 +11,13 @@ import gov.nasa.jpf.JPF;
 import gov.nasa.jpf.PropertyListenerAdapter;
 import gov.nasa.jpf.symbc.realtime.optimization.RTOptimizer;
 import gov.nasa.jpf.symbc.realtime.optimization.SeqInstructionReduction;
-import gov.nasa.jpf.symbc.realtime.rtsymexectree.JOPNodeFactory;
-import gov.nasa.jpf.symbc.realtime.rtsymexectree.PlatformAgnosticTimingNode;
-import gov.nasa.jpf.symbc.realtime.rtsymexectree.PlatformAgnosticTimingNodeFactory;
-import gov.nasa.jpf.symbc.realtime.rtsymexectree.TimingDocNodeFactory;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPNodeFactory;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.platformagnostic.PlatformAgnosticTimingNodeFactory;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.platformagnostic.PlatformAgnosticTimingStdNode;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.timingdoc.TimingDocNodeFactory;
 import gov.nasa.jpf.symbc.symexectree.ASymbolicExecutionTreeListener;
 import gov.nasa.jpf.symbc.symexectree.NodeFactory;
-import gov.nasa.jpf.symbc.symexectree.SymbolicExecutionTree;
+import gov.nasa.jpf.symbc.symexectree.structure.SymbolicExecutionTree;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.ThreadInfo;
 import gov.nasa.jpf.vm.VM;
@@ -96,6 +96,6 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 	}
 	
 	private String getNTAFileName(NTA nta, SymbolicExecutionTree tree) {
-		return outputBasePath + (outputBasePath.endsWith("/") ? "" : "/") + tree.getTargetMethod().getShortMethodName() + "_SPF.xml";
+		return outputBasePath + (outputBasePath.endsWith("/") ? "" : "/") + tree.getTargetMethod().getMethodName() + "_SPF.xml";
 	}
 }

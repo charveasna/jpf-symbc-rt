@@ -1,24 +1,28 @@
 /**
  * 
  */
-package gov.nasa.jpf.symbc.realtime.rtsymexectree;
+package gov.nasa.jpf.symbc.realtime.rtsymexectree.jop;
 
 import gov.nasa.jpf.jvm.bytecode.ReturnInstruction;
 import gov.nasa.jpf.symbc.realtime.JOPUtil;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.RTInvokeNode;
 import gov.nasa.jpf.symbc.symexectree.InstrContext;
-import gov.nasa.jpf.symbc.symexectree.SymbolicExecutionTree;
+import gov.nasa.jpf.symbc.symexectree.structure.SymbolicExecutionTree;
 import gov.nasa.jpf.vm.Instruction;
 
 /**
  * @author Kasper S. Luckow <luckow@cs.aau.dk>
  *
  */
-public class JOPNode extends RTNode implements IHasWCET {
-
+public class JOPInvokeNode extends RTInvokeNode implements IJOPRealTimeNode {
 	private int wcet;
 	
-	public JOPNode(InstrContext instructionContext) {
-		super(instructionContext);
+	public JOPInvokeNode(InstrContext instructionContext) {
+		super(instructionContext, null);
+	}
+	
+	public JOPInvokeNode(InstrContext instructionContext, SymbolicExecutionTree tree) {
+		super(instructionContext, tree);
 		Instruction instr = instructionContext.getInstr();
 		this.wcet = JOPUtil.getWCET(instr);
 		
@@ -30,11 +34,6 @@ public class JOPNode extends RTNode implements IHasWCET {
 			this.wcet += JOPUtil.calculateMethodSwitchCost(false, ((ReturnInstruction)instr).getMethodInfo());
 	}
 
-	public JOPNode(InstrContext instructionContext, SymbolicExecutionTree tree) {
-		super(instructionContext, tree);
-		this.wcet = JOPUtil.getWCET(instructionContext.getInstr());
-	}
-
 	@Override
 	public int getWCET() {
 		return this.wcet;
@@ -42,6 +41,6 @@ public class JOPNode extends RTNode implements IHasWCET {
 
 	@Override
 	public void setWCET(int wcet) {
-		this.wcet = wcet;		
+		this.wcet = wcet;
 	}
 }

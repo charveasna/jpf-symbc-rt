@@ -9,10 +9,10 @@ import java.util.LinkedList;
 
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasBCET;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasWCET;
-import gov.nasa.jpf.symbc.symexectree.Node;
-import gov.nasa.jpf.symbc.symexectree.SymbolicExecutionTree;
 import gov.nasa.jpf.symbc.symexectree.SymbolicExecutionTreeVisitor;
 import gov.nasa.jpf.symbc.symexectree.Transition;
+import gov.nasa.jpf.symbc.symexectree.structure.Node;
+import gov.nasa.jpf.symbc.symexectree.structure.SymbolicExecutionTree;
 
 /**
  * @author Kasper S. Luckow <luckow@cs.aau.dk>
