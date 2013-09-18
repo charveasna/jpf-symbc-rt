@@ -40,7 +40,6 @@ public class SeqInstructionReduction implements IRTOptimization, SymbolicExecuti
 
 	@Override
 	public void visit(Node node) {
-		//System.out.println("visited: " + node.getInstructionContext().getInstr().getMnemonic() + ": " + node.getInstructionContext().getInstr().getFilePos());
 		this.sequentialInstrNodes.addLast(node);
 		if(node.getOutgoingTransitions().size() > 1 || 
 		   node.getOutgoingTransitions().isEmpty()) {
@@ -71,10 +70,6 @@ public class SeqInstructionReduction implements IRTOptimization, SymbolicExecuti
 			((IHasBCET) lastNode).setBCET(aggrBCET);
 		}
 		lastNode.getIncomingTransitions().clear();
-		/*Iterator<Transition> transIter = lastNode.getIncomingTransitions().iterator();
-		while(transIter.hasNext()) {
-			transIter.next()
-		}*/
 		for(Transition in : firstNodeIncoming) {
 			in.setDstNode(lastNode);
 			lastNode.addIncomingTransition(in);
@@ -83,11 +78,9 @@ public class SeqInstructionReduction implements IRTOptimization, SymbolicExecuti
 		Iterator<Node> nodeIter = nodes.iterator();
 		while(nodeIter.hasNext()) {
 			Node removeNode = nodeIter.next();
-			if(!removeNode.equals(lastNode) && removeNode.getOutgoingTransitions().size() != 0) {
+			if(!removeNode.equals(lastNode) && 
+			   removeNode.getOutgoingTransitions().size() != 0)
 				this.tree.removeNode(removeNode);
-			} else {
-				System.out.println("not removing this: " + removeNode.getInstructionContext().getInstr().getFilePos());
-			}
 		}
 		
 	}
