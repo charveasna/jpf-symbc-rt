@@ -60,7 +60,7 @@ public class SimpleSys extends PeriodicThread {
 	}
 
 	@Override
-	protected boolean run() {
+	public boolean run() {
 		computation(false, true);
 		return false;
 	}

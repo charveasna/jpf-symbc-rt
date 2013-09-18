@@ -12,6 +12,7 @@ import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasWCET;
 import gov.nasa.jpf.symbc.symexectree.SymbolicExecutionTreeVisitor;
 import gov.nasa.jpf.symbc.symexectree.Transition;
 import gov.nasa.jpf.symbc.symexectree.structure.Node;
+import gov.nasa.jpf.symbc.symexectree.structure.StdNode;
 import gov.nasa.jpf.symbc.symexectree.structure.SymbolicExecutionTree;
 
 /**
@@ -39,6 +40,7 @@ public class SeqInstructionReduction implements IRTOptimization, SymbolicExecuti
 
 	@Override
 	public void visit(Node node) {
+		//System.out.println("visited: " + node.getInstructionContext().getInstr().getMnemonic() + ": " + node.getInstructionContext().getInstr().getFilePos());
 		this.sequentialInstrNodes.addLast(node);
 		if(node.getOutgoingTransitions().size() > 1 || 
 		   node.getOutgoingTransitions().isEmpty()) {
@@ -68,14 +70,23 @@ public class SeqInstructionReduction implements IRTOptimization, SymbolicExecuti
 		if(lastNode instanceof IHasBCET) {
 			((IHasBCET) lastNode).setBCET(aggrBCET);
 		}
+		lastNode.getIncomingTransitions().clear();
+		/*Iterator<Transition> transIter = lastNode.getIncomingTransitions().iterator();
+		while(transIter.hasNext()) {
+			transIter.next()
+		}*/
 		for(Transition in : firstNodeIncoming) {
 			in.setDstNode(lastNode);
+			lastNode.addIncomingTransition(in);
 		}
+
 		Iterator<Node> nodeIter = nodes.iterator();
 		while(nodeIter.hasNext()) {
 			Node removeNode = nodeIter.next();
-			if(removeNode != lastNode) {
+			if(!removeNode.equals(lastNode) && removeNode.getOutgoingTransitions().size() != 0) {
 				this.tree.removeNode(removeNode);
+			} else {
+				System.out.println("not removing this: " + removeNode.getInstructionContext().getInstr().getFilePos());
 			}
 		}
 		

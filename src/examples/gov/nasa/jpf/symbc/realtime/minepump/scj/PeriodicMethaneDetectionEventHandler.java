@@ -54,7 +54,7 @@ public class PeriodicMethaneDetectionEventHandler extends PeriodicThread
 	}
 
 	@Override
-	protected boolean run() {
+	public boolean run() {
 		
 		if(methaneSensor.isCriticalMethaneLevelReached())
 	      	waterpumpActuator.emergencyStop(true);

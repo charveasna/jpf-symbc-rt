@@ -15,7 +15,7 @@ public class PeriodicLiftControl extends PeriodicThread {
 	}
 
 	@Override
-	protected boolean run() {
+	public boolean run() {
 		ctrl.setVals();
 		ctrl.getVals();
 		ctrl.loop(io);

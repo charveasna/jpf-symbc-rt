@@ -6,7 +6,6 @@ package gov.nasa.jpf.symbc.realtime.rtsymexectree.timingdoc;
 import gov.nasa.jpf.jvm.bytecode.ReturnInstruction;
 import gov.nasa.jpf.symbc.realtime.InstructionTimingInfo;
 import gov.nasa.jpf.symbc.realtime.JOPUtil;
-import gov.nasa.jpf.symbc.realtime.rtsymexectree.ATimingDocNode;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.RTIfNode;
 import gov.nasa.jpf.symbc.symexectree.InstrContext;
 import gov.nasa.jpf.symbc.symexectree.structure.SymbolicExecutionTree;

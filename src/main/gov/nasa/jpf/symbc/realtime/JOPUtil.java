@@ -661,12 +661,16 @@ public class JOPUtil {
 					+ "]");
 		case (187):
 			wcet=100;
-			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
-					+ "]");
-//			break;
+			System.err.println("wcet not known for [" + instruction.getMnemonic() + "]");
+			//throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					//+ "]");
+			break;
 		case (188):
-			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
-					+ "]");
+			wcet = 100;
+			System.err.println("wcet not known for [" + instruction.getMnemonic()
+					+ "] Using default: " + wcet);
+			break;
+			//throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic() + "]");
 		case (189):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
@@ -674,8 +678,9 @@ public class JOPUtil {
 			wcet = 6 + r;
 			break;
 		case (191):
-			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
-					+ "]");
+			System.err.println("wcet not known for [" + instruction.getMnemonic() + "]");
+			//throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic() + "]");
+			break;
 		case (192):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");

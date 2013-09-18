@@ -21,6 +21,7 @@ package gov.nasa.jpf.symbc.realtime.minepump.scj;
 import gov.nasa.jpf.symbc.realtime.minepump.actuators.WaterpumpActuator;
 import gov.nasa.jpf.symbc.realtime.minepump.sensors.HighWaterSensor;
 import gov.nasa.jpf.symbc.realtime.minepump.sensors.LowWaterSensor;
+import gov.nasa.jpf.symbc.realtime.minepump.sensors.MethaneSensor;
 
 import javax.scj.PeriodicParameters;
 import javax.scj.PeriodicThread;
@@ -33,6 +34,20 @@ public class PeriodicWaterLevelDetectionEventHandler extends PeriodicThread
 	private WaterpumpActuator waterpumpActuator;
 	
 
+	public static void main(String[] args) {
+		int criticalMethaneLevel = 2;
+		int brickHistorySize = 5;
+		HighWaterSensor hSens = new HighWaterSensor(1, 2);
+		LowWaterSensor lSens = new LowWaterSensor(2, 2);
+		
+		WaterpumpActuator w = new WaterpumpActuator(0);
+		PeriodicWaterLevelDetectionEventHandler l = new PeriodicWaterLevelDetectionEventHandler(
+				new PeriodicParameters(2000),
+				hSens, lSens, w);
+		
+		l.run();
+	}
+	
 	public PeriodicWaterLevelDetectionEventHandler(
 			PeriodicParameters parameters, 
 			HighWaterSensor highWaterSensor, LowWaterSensor lowWaterSensor,
@@ -45,7 +60,7 @@ public class PeriodicWaterLevelDetectionEventHandler extends PeriodicThread
 	}
 
 	@Override
-	protected boolean run() {
+	public boolean run() {
 		if (this.highWaterSensor.criticalWaterLevel()) {
 		    this.waterpumpActuator.emergencyStop(true);
 		}

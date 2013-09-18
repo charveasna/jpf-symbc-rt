@@ -174,7 +174,7 @@ public class UppaalTranslator {
 							.append("executionTime' == running[tID]");
 		}
 		newLoc.setInvariant(invariantBuilder.toString());
-		
+		newLoc.setComment(instr.getFilePos());
 		return newLoc;
 	}
 }

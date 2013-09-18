@@ -1,0 +1,8 @@
+syntax: glob
+
+build.properties
+build/*
+dist/*
+*.class
+*~
+*.DS_Store

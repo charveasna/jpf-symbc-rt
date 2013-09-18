@@ -21,7 +21,8 @@ public class TestMinepump extends InvokeTest {
 	private static final String REALTIME = "+symbolic.realtime = true";
 	private static final String TETASARTS = "+symbolic.realtime.tetasarts = false";
 	private static final String REALTIME_PLATFORM = "+symbolic.realtime.platform = jop";
-	private static final String REALTIME_PATH = "+symbolic.realtime.outputpath = ${jpf-symbc}/minepump_no_tetasarts.xml";
+	private static final String OPTIMIZE = "+symbolic.realtime.optimize = true";
+	private static final String REALTIME_PATH = "+symbolic.realtime.outputbasepath = ${jpf-symbc-rt}/";
 	
 	private static final String[] JPF_ARGS = {INSN_FACTORY, 
 											  LISTENER, 
@@ -30,7 +31,8 @@ public class TestMinepump extends InvokeTest {
 											  REALTIME,
 											  TETASARTS,
 											  REALTIME_PLATFORM,
-											  REALTIME_PATH};
+											  REALTIME_PATH,
+											  OPTIMIZE};
 	@Test
 	public void mainTest() {
 		if (verifyNoPropertyViolation(JPF_ARGS)) {
