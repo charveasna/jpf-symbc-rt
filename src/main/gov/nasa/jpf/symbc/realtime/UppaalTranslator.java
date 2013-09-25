@@ -8,8 +8,12 @@ import gov.nasa.jpf.jvm.bytecode.InvokeInstruction;
 import gov.nasa.jpf.jvm.bytecode.ReturnInstruction;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasBCET;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasWCET;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.RTFireSporadicNode;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.SporadicEventSpecException;
 import gov.nasa.jpf.symbc.symexectree.MethodDesc;
 import gov.nasa.jpf.symbc.symexectree.Transition;
+import gov.nasa.jpf.symbc.symexectree.structure.MonitorEnterNode;
+import gov.nasa.jpf.symbc.symexectree.structure.MonitorExitNode;
 import gov.nasa.jpf.symbc.symexectree.structure.Node;
 import gov.nasa.jpf.symbc.symexectree.structure.SymbolicExecutionTree;
 import gov.nasa.jpf.symbc.symexectree.visualizer.PrettyPrinterException;
@@ -27,6 +31,7 @@ import uppaal.Automaton;
 import uppaal.Location;
 import uppaal.NTA;
 import uppaal.Location.LocationType;
+import uppaal.labels.Guard;
 import uppaal.labels.Synchronization;
 import uppaal.labels.Synchronization.SyncType;
 
@@ -115,7 +120,6 @@ public class UppaalTranslator {
 			for(Transition t : outTransitions) {
 				uppaal.Transition uppTrans = new uppaal.Transition(ta, targetLoc, recursivelyTraverseSymTree(t.getDstNode(), ta));
 				this.patchTransition(uppTrans, treeNode);
-
 			}
 		}
 		return targetLoc;
@@ -154,6 +158,27 @@ public class UppaalTranslator {
 			uppTrans.setGuard("executionTime == " + ((IHasWCET) treeNode).getWCET());
 			uppTrans.addUpdate("executionTime = 0");
 		}
+		
+		if(this.targetTetaSARTS &&
+		   treeNode instanceof MonitorEnterNode)
+			uppTrans.addUpdate("monitorEnter()");
+		else if(this.targetTetaSARTS && 
+		        treeNode instanceof MonitorExitNode)
+			uppTrans.addUpdate("monitorExit()");
+		
+		else if(this.targetTetaSARTS && 
+		        treeNode instanceof RTFireSporadicNode) {
+			RTFireSporadicNode spoNode = (RTFireSporadicNode)treeNode;
+			String chanName = "fire[" + spoNode.getSporadicEventID() + "]";
+			uppTrans.setSync(new Synchronization(chanName, SyncType.INITIATOR));
+			
+			Guard prevGuard = uppTrans.getGuard();
+			String finalGuard = "fireable[" + spoNode.getSporadicEventID() + "]";
+			if(prevGuard != null)
+				finalGuard += " &&\n" + prevGuard.toString();
+			uppTrans.setGuard(finalGuard);
+		}
+				
 	}
 	
 	private Location translateTreeNode(Node treeNode, Automaton ta) {

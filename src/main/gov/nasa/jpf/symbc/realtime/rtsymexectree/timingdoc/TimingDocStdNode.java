@@ -47,4 +47,9 @@ public class TimingDocStdNode extends RTStdNode implements ITimingDocRealTimeNod
 	public void setWCET(int wcet) {
 		this.instrTimingInfo.setWcet(wcet);
 	}
+
+	@Override
+	public boolean isReducible() {
+		return true;
+	}
 }

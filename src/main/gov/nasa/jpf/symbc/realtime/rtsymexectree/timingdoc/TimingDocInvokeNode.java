@@ -46,4 +46,9 @@ public class TimingDocInvokeNode extends RTInvokeNode implements ITimingDocRealT
 	public void setWCET(int wcet) {
 		this.instrTimingInfo.setWcet(wcet);
 	}
+
+	@Override
+	public boolean isReducible() {
+		return true;
+	}
 }

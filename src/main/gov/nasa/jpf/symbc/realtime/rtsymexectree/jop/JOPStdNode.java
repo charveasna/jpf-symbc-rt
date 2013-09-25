@@ -26,13 +26,6 @@ public class JOPStdNode extends RTStdNode implements IJOPRealTimeNode {
 		super(instructionContext, tree);
 		Instruction instr = instructionContext.getInstr();
 		this.wcet = JOPUtil.getWCET(instr);
-		
-		/*Add the method switch cost if the instruction is a return instruction
-		* Note that we assume 'worst-case behavior' in terms of the cache - a
-		* cache miss is assumed to always occur
-		*/
-		if(instr instanceof ReturnInstruction)
-			this.wcet += JOPUtil.calculateMethodSwitchCost(false, ((ReturnInstruction)instr).getMethodInfo());
 	}
 
 	@Override
@@ -43,5 +36,10 @@ public class JOPStdNode extends RTStdNode implements IJOPRealTimeNode {
 	@Override
 	public void setWCET(int wcet) {
 		this.wcet = wcet;
+	}
+
+	@Override
+	public boolean isReducible() {
+		return true;
 	}
 }

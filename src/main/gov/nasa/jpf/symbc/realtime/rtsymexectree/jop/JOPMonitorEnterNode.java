@@ -3,12 +3,11 @@
  */
 package gov.nasa.jpf.symbc.realtime.rtsymexectree.jop;
 
-import gov.nasa.jpf.jvm.bytecode.InvokeInstruction;
+import gov.nasa.jpf.jvm.bytecode.MONITORENTER;
 import gov.nasa.jpf.jvm.bytecode.ReturnInstruction;
 import gov.nasa.jpf.symbc.realtime.JOPUtil;
-import gov.nasa.jpf.symbc.realtime.rtsymexectree.IRealTimeNode;
-import gov.nasa.jpf.symbc.realtime.rtsymexectree.IStateReducible;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.RTInvokeNode;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.RTMonitorEnterNode;
 import gov.nasa.jpf.symbc.symexectree.InstrContext;
 import gov.nasa.jpf.symbc.symexectree.structure.SymbolicExecutionTree;
 import gov.nasa.jpf.vm.Instruction;
@@ -17,24 +16,17 @@ import gov.nasa.jpf.vm.Instruction;
  * @author Kasper S. Luckow <luckow@cs.aau.dk>
  *
  */
-public class JOPInvokeNode extends RTInvokeNode implements IJOPRealTimeNode {
+public class JOPMonitorEnterNode extends RTMonitorEnterNode implements IJOPRealTimeNode {
 	private int wcet;
 	
-	public JOPInvokeNode(InstrContext instructionContext) {
+	public JOPMonitorEnterNode(InstrContext instructionContext) {
 		super(instructionContext, null);
 	}
 	
-	public JOPInvokeNode(InstrContext instructionContext, SymbolicExecutionTree tree) {
+	public JOPMonitorEnterNode(InstrContext instructionContext, SymbolicExecutionTree tree) {
 		super(instructionContext, tree);
 		Instruction instr = instructionContext.getInstr();
 		this.wcet = JOPUtil.getWCET(instr);
-		
-		/*Add the method switch cost if the instruction is a return instruction
-		* Note that we assume 'worst-case behavior' in terms of the cache - a
-		* cache miss is assumed to always occur
-		*/
-		if(instr instanceof InvokeInstruction)
-			this.wcet += JOPUtil.calculateMethodSwitchCost(false, ((InvokeInstruction)instr).getMethodInfo());
 	}
 
 	@Override
@@ -49,6 +41,6 @@ public class JOPInvokeNode extends RTInvokeNode implements IJOPRealTimeNode {
 
 	@Override
 	public boolean isReducible() {
-		return true;
+		return false;
 	}
 }

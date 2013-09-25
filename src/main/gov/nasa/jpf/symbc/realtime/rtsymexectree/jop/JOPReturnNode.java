@@ -45,4 +45,9 @@ public class JOPReturnNode extends RTReturnNode implements IJOPRealTimeNode {
 	public void setWCET(int wcet) {
 		this.wcet = wcet;
 	}
+
+	@Override
+	public boolean isReducible() {
+		return true;
+	}
 }

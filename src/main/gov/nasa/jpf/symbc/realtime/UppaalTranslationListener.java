@@ -85,7 +85,7 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 		RTOptimizer optimizer = null;
 		if(this.optimize) {
 			optimizer = new RTOptimizer();
-			optimizer.addOptimization(new SeqInstructionReduction());
+			optimizer.addOptimization(new SeqInstructionReduction(this.targetTetaSARTS));
 		}
 		for(SymbolicExecutionTree tree : trees) {
 			if(this.optimize)

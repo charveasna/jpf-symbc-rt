@@ -8,6 +8,7 @@ import gov.nasa.jpf.jvm.bytecode.ReturnInstruction;
 import gov.nasa.jpf.symbc.realtime.JOPUtil;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IRealTimeNode;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IStateReducible;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.RTFireSporadicNode;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.RTInvokeNode;
 import gov.nasa.jpf.symbc.symexectree.InstrContext;
 import gov.nasa.jpf.symbc.symexectree.structure.SymbolicExecutionTree;
@@ -17,14 +18,14 @@ import gov.nasa.jpf.vm.Instruction;
  * @author Kasper S. Luckow <luckow@cs.aau.dk>
  *
  */
-public class JOPInvokeNode extends RTInvokeNode implements IJOPRealTimeNode {
+public class JOPFireSporadicNode extends RTFireSporadicNode implements IJOPRealTimeNode {
 	private int wcet;
 	
-	public JOPInvokeNode(InstrContext instructionContext) {
+	public JOPFireSporadicNode(InstrContext instructionContext) {
 		super(instructionContext, null);
 	}
 	
-	public JOPInvokeNode(InstrContext instructionContext, SymbolicExecutionTree tree) {
+	public JOPFireSporadicNode(InstrContext instructionContext, SymbolicExecutionTree tree) {
 		super(instructionContext, tree);
 		Instruction instr = instructionContext.getInstr();
 		this.wcet = JOPUtil.getWCET(instr);
@@ -49,6 +50,6 @@ public class JOPInvokeNode extends RTInvokeNode implements IJOPRealTimeNode {
 
 	@Override
 	public boolean isReducible() {
-		return true;
+		return false;
 	}
 }

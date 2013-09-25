@@ -9,6 +9,7 @@ import java.util.LinkedList;
 
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasBCET;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasWCET;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.IStateReducible;
 import gov.nasa.jpf.symbc.symexectree.SymbolicExecutionTreeVisitor;
 import gov.nasa.jpf.symbc.symexectree.Transition;
 import gov.nasa.jpf.symbc.symexectree.structure.Node;
@@ -24,7 +25,10 @@ public class SeqInstructionReduction implements IRTOptimization, SymbolicExecuti
 	private LinkedList<Node> sequentialInstrNodes;
 	private SymbolicExecutionTree tree;
 	
-	public SeqInstructionReduction() {
+	private final boolean targetTetaSARTS;
+	
+	public SeqInstructionReduction(boolean targetTetaSARTS) {
+		this.targetTetaSARTS = targetTetaSARTS;
 		this.sequentialInstrNodes = new LinkedList<>();
 	}
 	
@@ -42,10 +46,18 @@ public class SeqInstructionReduction implements IRTOptimization, SymbolicExecuti
 	public void visit(Node node) {
 		this.sequentialInstrNodes.addLast(node);
 		if(node.getOutgoingTransitions().size() > 1 || 
-		   node.getOutgoingTransitions().isEmpty()) {
+		   node.getOutgoingTransitions().isEmpty() 	||
+		   (!this.isNodeReducible(node) && this.targetTetaSARTS)) {
 			collapseNodes(this.sequentialInstrNodes);
 			this.sequentialInstrNodes.clear();
 		}
+	}
+	
+	private boolean isNodeReducible(Node node) {
+		if(node instanceof IStateReducible) {
+			return ((IStateReducible) node).isReducible();
+		} else
+			return false;
 	}
 
 	private void collapseNodes(LinkedList<Node> nodes) {
