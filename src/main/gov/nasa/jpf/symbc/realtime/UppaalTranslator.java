@@ -75,7 +75,7 @@ public class UppaalTranslator {
 		NTA nta = new NTA();
 		if(!this.targetTetaSARTS) {
 			nta.getSystemDeclaration().addSystemInstance(ta.getName().getName());
-			nta.getDeclarations().add("clock globalClock;");
+			nta.getDeclarations().add("clock executionTime;");
 		}
 		nta.addAutomaton(ta);
 		return nta;

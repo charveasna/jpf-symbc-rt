@@ -14,24 +14,31 @@ import org.junit.Test;
  *
  */
 public class TestLift extends InvokeTest {
+	/*
+	 * For Linux: Remember to set the LD_LIBRARY_PATH environment variable to point to the appropriate lib directory in
+	 * jpf-symbc (32bit or 64bit). This is because we need to use the cvc3bitvec solver since liftcontrol performs bit operations
+	 */
+	
 	private static final String SYM_METHOD = "+symbolic.method=gov.nasa.jpf.symbc.realtime.jembench.lift.PeriodicLiftControl.run()";
-	private static final String LISTENER = "+listener = gov.nasa.jpf.symbc.realtime.UppaalTranslationListener";
 
-	//Real time config:
 	private static final String CLPATH = "+classpath=${jpf-symbc}/lib/scjNoRelativeTime_1.0.0.jar";
-	private static final String REALTIME = "+symbolic.realtime = true";
-	private static final String TETASARTS = "+symbolic.realtime.tetasarts = false";
+	private static final String LISTENER = "+listener = gov.nasa.jpf.symbc.realtime.UppaalTranslationListener";
 	private static final String REALTIME_PLATFORM = "+symbolic.realtime.platform = jop";
-	private static final String REALTIME_PATH = "+symbolic.realtime.outputpath = ./output/temp.xml";
+	private static final String TETASARTS = "+symbolic.realtime.targettetasarts = false";
+	private static final String REALTIME_PATH = "+symbolic.realtime.outputbasepath = ./output";
+	private static final String OPTIMIZE = "+symbolic.realtime.optimize = true";
+	
+	private static final String SOLVER = "+symbolic.dp=cvc3bitvec";
 	
 	private static final String[] JPF_ARGS = {INSN_FACTORY, 
 											  LISTENER, 
+											  OPTIMIZE,
 											  SYM_METHOD, 
 											  CLPATH,
-											  REALTIME,
 											  TETASARTS,
 											  REALTIME_PLATFORM,
-											  REALTIME_PATH};
+											  REALTIME_PATH,
+											  SOLVER};
 	@Test
 	public void mainTest() {
 		if (verifyNoPropertyViolation(JPF_ARGS)) {

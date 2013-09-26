@@ -26,6 +26,8 @@
  */
 package gov.nasa.jpf.symbc.realtime.jembench.lift;
 
+import gov.nasa.jpf.symbc.Debug;
+
 /**
  * @author martin
  *
@@ -42,10 +44,12 @@ public class TalIo {
 		out = new boolean[4];
 		analog = new int[3];
 		led = new boolean[14];
-		for (int i=0; i<10; ++i) in[i]	= false;	
-		for (int i=0; i<4; ++i) out[i]	= false;	
-		for (int i=0; i<3; ++i) analog[i]	= 0;	
-		for (int i=0; i<14; ++i) led[i]	= false;	
+		for (int i=0; i<10; ++i) in[i]	= Debug.makeSymbolicBoolean("SYMB_IN" + symID);//false;	
+		for (int i=0; i<4; ++i) out[i]	= Debug.makeSymbolicBoolean("SYMB_OUT" + symID);//false;	
+		for (int i=0; i<3; ++i) analog[i]	= Debug.makeSymbolicInteger("SYMB_ANALOG" + symID);//0;	
+		for (int i=0; i<14; ++i) led[i]	= Debug.makeSymbolicBoolean("SYMB_OUT" + symID);//false;
+		symID++;
 	}
-
+	
+	private static int symID = 0;
 }

@@ -20,6 +20,8 @@
 
 package gov.nasa.jpf.symbc.realtime.jembench.lift;
 
+import gov.nasa.jpf.symbc.Debug;
+
 public class SimLiftIo {
 
 	public static final int IO_BASE = 0xffffff80;
@@ -38,11 +40,12 @@ public class SimLiftIo {
 	 */
 	static int cnt;
 	
+	private static int symID = 0;
 	public static int rd(int addr) {
-		return cnt+addr;
+		return cnt+Debug.makeSymbolicInteger("READ SYMB" + symID++);//addr;
 	}
 	public static void wr(int val, int addr) {
-		cnt += val + addr;
+		cnt += Debug.makeSymbolicInteger("WRITE SYMB" + symID++);//val + addr;
 	}
 
 }

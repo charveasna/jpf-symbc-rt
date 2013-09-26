@@ -27,22 +27,16 @@ import gov.nasa.jpf.vm.VM;
  *
  */
 public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
-	
-	private static final String DEF_OUTPUT_PATH = "./";
-	private String targetPlatform;
-	private boolean targetTetaSARTS;
-	private boolean optimize;
-	private String outputBasePath;
-	
 	/**
 	 * This is the listener used for translating the symbolic execution tree generated
 	 * by SPF to a timed automaton amenable to model checking using UPPAAL.
 	 * The configurations for this listener are:
 	 * 
-	 * symbolic.realtime.platform = [jop|agnostic|timingdoc]	(default: jop)
-	 * symbolic.realtime.targettetasarts = [true|false]			(default: false)
-	 * symbolic.realtime.outputbasepath = <output path>			(default: ./)
-	 * symbolic.realtime.optimize = [true|false]				(default: true)
+	 * symbolic.realtime.platform 			=	[jop|agnostic|timingdoc]	(default: jop)
+	 * symbolic.realtime.targettetasarts 	=	[true|false]				(default: false)
+	 * symbolic.realtime.outputbasepath 	=	<output path>				(default: ./)
+	 * symbolic.realtime.optimize 			= 	[true|false]				(default: true)
+	 * symbolic.realtime.generatequeries 	= 	[true|false]				(default: true)
 	 * 
 	 * If the target platform is 'timingdoc', a Timing Doc - describing the execution
 	 * times of the individual Java Bytecodes of the particular platform - must be
@@ -50,11 +44,20 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 	 * 
 	 * symbolic.realtime.timingdocpath = <source path>
 	 */
+	
+	private static final String DEF_OUTPUT_PATH = "./";
+	private String targetPlatform;
+	private boolean targetTetaSARTS;
+	private boolean optimize;
+	private String outputBasePath;
+	private boolean generateQueries;
+
 	public UppaalTranslationListener(Config conf, JPF jpf) {
 		super(conf, jpf);
 		this.targetTetaSARTS = conf.getBoolean("symbolic.realtime.targettetasarts", false);
 		this.optimize = conf.getBoolean("symbolic.realtime.optimize", true);
 		this.outputBasePath = conf.getString("symbolic.realtime.outputbasepath", UppaalTranslationListener.DEF_OUTPUT_PATH);
+		this.generateQueries = conf.getBoolean("symbolic.realtime.generatequeries", !this.targetTetaSARTS);
 	}
 
 	@Override
@@ -92,10 +95,19 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 				optimizer.optimize(tree);
 			NTA ntaSystem = translator.translateSymTree(tree);
 			ntaSystem.writePrettyLayoutModelToFile(this.getNTAFileName(ntaSystem, tree));
+			if(this.generateQueries)
+				QueriesFileGenerator.writeQueriesFile(ntaSystem, getQueriesFileName(ntaSystem, tree));
 		}
 	}
 	
 	private String getNTAFileName(NTA nta, SymbolicExecutionTree tree) {
-		return outputBasePath + (outputBasePath.endsWith("/") ? "" : "/") + tree.getTargetMethod().getMethodName() + "_SPF.xml";
+		return this.getBaseFileName(nta, tree) + ".xml";
+	}
+	
+	private String getQueriesFileName(NTA nta, SymbolicExecutionTree tree) {
+		return this.getBaseFileName(nta, tree) + ".q";
+	}
+	private String getBaseFileName(NTA nta, SymbolicExecutionTree tree) {
+		return outputBasePath + (outputBasePath.endsWith("/") ? "" : "/") + tree.getTargetMethod().getMethodName() + "_SPF";
 	}
 }
