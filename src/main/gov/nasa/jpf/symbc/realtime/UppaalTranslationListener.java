@@ -33,7 +33,7 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 	 * The configurations for this listener are:
 	 * 
 	 * symbolic.realtime.platform 			=	[jop|agnostic|timingdoc]	(default: jop)
-	 * symbolic.realtime.targettetasarts 	=	[true|false]				(default: false)
+	 * symbolic.realtime.targetsymrt	 	=	[true|false]				(default: false)
 	 * symbolic.realtime.outputbasepath 	=	<output path>				(default: ./)
 	 * symbolic.realtime.optimize 			= 	[true|false]				(default: true)
 	 * symbolic.realtime.generatequeries 	= 	[true|false]				(default: true)
@@ -47,17 +47,17 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 	
 	private static final String DEF_OUTPUT_PATH = "./";
 	private String targetPlatform;
-	private boolean targetTetaSARTS;
+	private boolean targetSymRT;
 	private boolean optimize;
 	private String outputBasePath;
 	private boolean generateQueries;
 
 	public UppaalTranslationListener(Config conf, JPF jpf) {
 		super(conf, jpf);
-		this.targetTetaSARTS = conf.getBoolean("symbolic.realtime.targettetasarts", false);
+		this.targetSymRT = conf.getBoolean("symbolic.realtime.targetsymrt", false);
 		this.optimize = conf.getBoolean("symbolic.realtime.optimize", true);
 		this.outputBasePath = conf.getString("symbolic.realtime.outputbasepath", UppaalTranslationListener.DEF_OUTPUT_PATH);
-		this.generateQueries = conf.getBoolean("symbolic.realtime.generatequeries", !this.targetTetaSARTS);
+		this.generateQueries = conf.getBoolean("symbolic.realtime.generatequeries", !this.targetSymRT);
 	}
 
 	@Override
@@ -84,11 +84,11 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 	protected void doneConstructingSymbExecTree(LinkedList<SymbolicExecutionTree> trees) {
 		if(trees == null)
 			throw new UppaalTranslatorException("No symbolic execution trees were generated!");
-		UppaalTranslator translator = new UppaalTranslator(this.targetTetaSARTS);
+		UppaalTranslator translator = new UppaalTranslator(this.targetSymRT);
 		RTOptimizer optimizer = null;
 		if(this.optimize) {
 			optimizer = new RTOptimizer();
-			optimizer.addOptimization(new SeqInstructionReduction(this.targetTetaSARTS));
+			optimizer.addOptimization(new SeqInstructionReduction(this.targetSymRT));
 		}
 		for(SymbolicExecutionTree tree : trees) {
 			if(this.optimize)

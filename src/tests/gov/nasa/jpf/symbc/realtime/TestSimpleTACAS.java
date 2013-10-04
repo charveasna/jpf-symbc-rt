@@ -19,7 +19,7 @@ public class TestSimpleTACAS  extends InvokeTest {
 	//Real time config:
 	private static final String CLPATH = "+classpath=${jpf-symbc}/build";
 	private static final String REALTIME_PLATFORM = "+symbolic.realtime.platform = jop";
-	private static final String TETASARTS = "+symbolic.realtime.targettetasarts = false";
+	private static final String SYMRT = "+symbolic.realtime.targetsymrt = false";
 	private static final String REALTIME_PATH = "+symbolic.realtime.outputbasepath = ./output";
 	private static final String OPTIMIZE = "+symbolic.realtime.optimize = false";
 	
@@ -31,7 +31,7 @@ public class TestSimpleTACAS  extends InvokeTest {
 											  SYM_METHOD, 
 											  CLPATH,
 											  REALTIME_PLATFORM,
-											  TETASARTS,
+											  SYMRT,
 											  REALTIME_PATH,
 											  OPTIMIZE,
 											  SOLVER};

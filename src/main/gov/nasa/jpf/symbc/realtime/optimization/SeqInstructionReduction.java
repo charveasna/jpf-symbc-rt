@@ -25,10 +25,10 @@ public class SeqInstructionReduction implements IRTOptimization, SymbolicExecuti
 	private LinkedList<Node> sequentialInstrNodes;
 	private SymbolicExecutionTree tree;
 	
-	private final boolean targetTetaSARTS;
+	private final boolean targetSymRT;
 	
-	public SeqInstructionReduction(boolean targetTetaSARTS) {
-		this.targetTetaSARTS = targetTetaSARTS;
+	public SeqInstructionReduction(boolean targetSymRT) {
+		this.targetSymRT = targetSymRT;
 		this.sequentialInstrNodes = new LinkedList<>();
 	}
 	
@@ -47,7 +47,7 @@ public class SeqInstructionReduction implements IRTOptimization, SymbolicExecuti
 		this.sequentialInstrNodes.addLast(node);
 		if(node.getOutgoingTransitions().size() > 1 || 
 		   node.getOutgoingTransitions().isEmpty() 	||
-		   (!this.isNodeReducible(node) && this.targetTetaSARTS)) {
+		   (!this.isNodeReducible(node) && this.targetSymRT)) {
 			collapseNodes(this.sequentialInstrNodes);
 			this.sequentialInstrNodes.clear();
 		}

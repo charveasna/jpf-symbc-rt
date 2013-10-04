@@ -22,9 +22,9 @@ import uppaal.labels.Update;
  */
 public class JOPUPPAALTranslator extends AUPPAALTranslator {
 
-	public JOPUPPAALTranslator(Config jpfConf, boolean targetTetaSARTS) {
-		super(jpfConf, targetTetaSARTS);
-		if(!targetTetaSARTS) {
+	public JOPUPPAALTranslator(Config jpfConf, boolean targetSymRT) {
+		super(jpfConf, targetSymRT);
+		if(!targetSymRT) {
 			for(TranslationUnit tu : super.methodAutomatonMap.values()) {
 				tu.getAutomaton().getDeclaration().add("int methodSwitchCost;");
 			}
@@ -32,12 +32,12 @@ public class JOPUPPAALTranslator extends AUPPAALTranslator {
 	}
 
 	@Override
-	protected Location constructLocation(Instruction instr, Automaton ta, boolean targetTetaSARTS) {
+	protected Location constructLocation(Instruction instr, Automaton ta, boolean targetSymRT) {
 		Location loc = new Location(ta, instr.getMnemonic() + "_" + super.unique_id++);
 		StringBuilder invariantBuilder = new StringBuilder();
 		invariantBuilder.append("executionTime <= ")
 						.append(JOPUtil.getWCET(instr));
-		if(targetTetaSARTS) {
+		if(targetSymRT) {
 			invariantBuilder.append("&&\n")
 							.append("executionTime' == running[tID]");
 		}
@@ -50,13 +50,13 @@ public class JOPUPPAALTranslator extends AUPPAALTranslator {
 	}
 
 	@Override
-	protected Transition constructTransition(Instruction instr, Location prevLoc, Location nxtLoc, Automaton ta, boolean targetTetaSARTS) {
+	protected Transition constructTransition(Instruction instr, Location prevLoc, Location nxtLoc, Automaton ta, boolean targetSymRT) {
 		if(instr instanceof ReturnInstruction) {
 			Location methodSwitchLocation = new Location(ta, "mSwitch" + super.unique_id++);
 			StringBuilder invariantBuilder = new StringBuilder();
 			invariantBuilder.append("executionTime <= ")
 							.append("methodSwitchCost");
-			if(targetTetaSARTS) {
+			if(targetSymRT) {
 				invariantBuilder.append("&&\n")
 								.append("executionTime' == running[tID]");
 			}

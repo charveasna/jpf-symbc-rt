@@ -21,7 +21,7 @@ public class TestSporadicFire extends InvokeTest {
 	
 	private static final String LISTENER = "+listener = gov.nasa.jpf.symbc.realtime.UppaalTranslationListener";
 	private static final String REALTIME_PLATFORM = "+symbolic.realtime.platform = jop";
-	private static final String TETASARTS = "+symbolic.realtime.targettetasarts = true";
+	private static final String SYMRT = "+symbolic.realtime.targetsymrt = true";
 	private static final String REALTIME_PATH = "+symbolic.realtime.outputbasepath = ./output";
 	private static final String OPTIMIZE = "+symbolic.realtime.optimize = true";
 	
@@ -32,7 +32,7 @@ public class TestSporadicFire extends InvokeTest {
 	
 	//private static final String SOLVER = "+symbolic.dp=no_solver";
 	private static final String[] JPF_ARGS = {INSN_FACTORY, 
-											  TETASARTS, 
+											  SYMRT, 
 											  LISTENER,
 											  SYM_METHOD, 
 											  OPTIMIZE, 

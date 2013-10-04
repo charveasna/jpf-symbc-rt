@@ -23,7 +23,7 @@ public class TestRTDebugSymVar extends InvokeTest {
 	private static final String OUTPUTPATH = "+symbolic.visualiser.basepath = ./";
 	
 	private static final String REALTIME_PLATFORM = "+symbolic.realtime.platform = jop";
-	private static final String TETASARTS = "+symbolic.realtime.targettetasarts = false";
+	private static final String SYMRT = "+symbolic.realtime.targetsymrt = false";
 	private static final String REALTIME_PATH = "+symbolic.realtime.outputpath = ${jpf-symbc}/";
 	private static final String OPTIMIZE = "+symbolic.realtime.optimize = false";
 	
@@ -35,7 +35,7 @@ public class TestRTDebugSymVar extends InvokeTest {
 	//private static final String SOLVER = "+symbolic.dp=no_solver";
 	private static final String[] JPF_ARGS = {INSN_FACTORY,
 											  OUTPUTPATH,
-											  TETASARTS, 
+											  SYMRT, 
 											  LISTENER, 
 											  CLASSPATH_UPDATED, 
 											  SYM_METHOD, 

@@ -42,22 +42,22 @@ public class UppaalOnTheFlyTranslationListener extends PropertyListenerAdapter {
 		this.jpfConf = conf;
 		
 		String targetPlatform = this.jpfConf.getString("symbolic.realtime.platform", "").toLowerCase();
-		boolean targetTetaSARTS = this.jpfConf.getBoolean("symbolic.realtime.targettetasarts", false);
+		boolean targetSymRT = this.jpfConf.getBoolean("symbolic.realtime.targetsymrt", false);
 		switch(targetPlatform) {
 			case "jop":
-				this.translator = new JOPUPPAALTranslator(this.jpfConf, targetTetaSARTS);
+				this.translator = new JOPUPPAALTranslator(this.jpfConf, targetSymRT);
 				break;
 			case "explicit":
-				this.translator = new ExplicitModelUPPAALTranslator(this.jpfConf, targetTetaSARTS);
+				this.translator = new ExplicitModelUPPAALTranslator(this.jpfConf, targetSymRT);
 				break;
 			case "timingdoc":
 				String timingDocPath = this.jpfConf.getString("symbolic.realtime.timingdocpath");
 				if(timingDocPath == null) 
 					throw new TimingDocException("symbolic.realtime.timingdocpath has not been set.");
-				this.translator = new TimingDocUPPAALTranslator(this.jpfConf, timingDocPath, targetTetaSARTS);
+				this.translator = new TimingDocUPPAALTranslator(this.jpfConf, timingDocPath, targetSymRT);
 			default:
 				System.out.println("Default platform JOP is used");
-				this.translator = new JOPUPPAALTranslator(this.jpfConf, targetTetaSARTS);
+				this.translator = new JOPUPPAALTranslator(this.jpfConf, targetSymRT);
 				break;
 		}
 	}

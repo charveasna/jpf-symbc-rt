@@ -22,18 +22,18 @@ public class TimingDocUPPAALTranslator extends AUPPAALTranslator {
 	/**
 	 * @param jpfConf
 	 */
-	protected TimingDocUPPAALTranslator(Config jpfConf, String timingDocPath, boolean targetTetaSARTS) {
-		super(jpfConf, targetTetaSARTS);
+	protected TimingDocUPPAALTranslator(Config jpfConf, String timingDocPath, boolean targetSymRT) {
+		super(jpfConf, targetSymRT);
 		this.timingDoc = TimingDocGenerator.generate(timingDocPath);
 	}
 
 	@Override
-	protected Location constructLocation(Instruction instr, Automaton ta, boolean targetTetaSARTS) {
+	protected Location constructLocation(Instruction instr, Automaton ta, boolean targetSymRT) {
 		Location loc = new Location(ta, instr.getMnemonic() + "_" + super.unique_id++);
 		StringBuilder invariantBuilder = new StringBuilder();
 		invariantBuilder.append("executionTime <= ")
 						.append(timingDoc.get(instr.getMnemonic()).getWcet());
-		if(targetTetaSARTS) {
+		if(targetSymRT) {
 			invariantBuilder.append("&&\n")
 							.append("executionTime' == running[tID]");
 		}
@@ -46,7 +46,7 @@ public class TimingDocUPPAALTranslator extends AUPPAALTranslator {
 	}
 
 	@Override
-	protected Transition constructTransition(Instruction instr, Location prevLoc, Location nxtLoc, Automaton ta, boolean targetTetaSARTS) {
+	protected Transition constructTransition(Instruction instr, Location prevLoc, Location nxtLoc, Automaton ta, boolean targetSymRT) {
 		Transition trans = new Transition(ta, prevLoc, nxtLoc);
 		trans.setGuard("executionTime == " + timingDoc.get(instr.getMnemonic()).getWcet());
 		trans.addUpdate("executionTime = 0");

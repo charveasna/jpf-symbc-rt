@@ -38,19 +38,19 @@ public abstract class AUPPAALTranslator {
 	protected int unique_id;
 	
 	protected Config jpfConf;
-	protected boolean targetTetaSARTS;
+	protected boolean targetSymRT;
 	
-	protected AUPPAALTranslator(Config jpfConf, boolean targetTetaSARTS) {
+	protected AUPPAALTranslator(Config jpfConf, boolean targetSymRT) {
 		this.previouslyExecutedInstr = null;
 		this.unique_id = 0;
 		this.nta = new NTA();
 		this.jpfConf = jpfConf;	
-		this.targetTetaSARTS = targetTetaSARTS;
+		this.targetSymRT = targetSymRT;
 		String[] methods = this.jpfConf.getStringArray("symbolic.method");
 		this.symbolicMethods = SymExecTreeUtils.convertJPFConfSymbcDescs(methods);
 		this.methodAutomatonMap = new HashMap<MethodDesc, TranslationUnit>();
 		for(MethodDesc m : this.symbolicMethods) {
-			TranslationUnit tu = new TranslationUnit(m, this.targetTetaSARTS);
+			TranslationUnit tu = new TranslationUnit(m, this.targetSymRT);
 			this.methodAutomatonMap.put(m, tu);
 		}
 	}
@@ -58,7 +58,7 @@ public abstract class AUPPAALTranslator {
 	public NTA finalizeAndGetNTA() {
 		for(TranslationUnit tu : this.methodAutomatonMap.values()) {
 			this.nta.addAutomaton(tu.getAutomaton());
-			if(!targetTetaSARTS) {
+			if(!targetSymRT) {
 				this.nta.getSystemDeclaration().addSystemInstance(tu.getTargetMethod().getShortMethodName());
 				this.nta.getDeclarations().add("clock globalClock;");
 			}
@@ -69,7 +69,7 @@ public abstract class AUPPAALTranslator {
 	public void finalizeAutomatonConstruction(StackFrame frame) {
 		MethodDesc mi = SymExecTreeUtils.getTargetMethodOfFrame(this.symbolicMethods, frame);
 		TranslationUnit tu = this.methodAutomatonMap.get(mi);
-		constructTransition(this.previouslyExecutedInstr, tu.getPrevLoc(), tu.getFinalLoc(), tu.getAutomaton(), this.targetTetaSARTS);
+		constructTransition(this.previouslyExecutedInstr, tu.getPrevLoc(), tu.getFinalLoc(), tu.getAutomaton(), this.targetSymRT);
 	}
 	
 	public void translateInstruction(Instruction instr, StackFrame frame) {
@@ -81,21 +81,21 @@ public abstract class AUPPAALTranslator {
 			if(tu.hasIfInstrBeenTranslated(instrCtx)) {
 				nxtLoc = tu.getIfInstrLocation(instrCtx);
 			} else {
-				nxtLoc = constructLocation(instr, tu.getAutomaton(), this.targetTetaSARTS);
+				nxtLoc = constructLocation(instr, tu.getAutomaton(), this.targetSymRT);
 				tu.addIfInstrContext(instrCtx, nxtLoc);
 			}
 		} else {
-			nxtLoc = constructLocation(instr, tu.getAutomaton(), this.targetTetaSARTS);
+			nxtLoc = constructLocation(instr, tu.getAutomaton(), this.targetSymRT);
 		}
 		assert nxtLoc != null;
 		
 		Transition trans = null;
 		if(this.previouslyExecutedInstr == null) { //Must be the first instruction i.e. initLoc -> firstInstrLoc
 			trans = new Transition(tu.getAutomaton(), tu.getInitLoc(), nxtLoc);
-			if(this.targetTetaSARTS)
+			if(this.targetSymRT)
 				trans.setSync(new Synchronization("run[tID]", SyncType.RECEIVER));
 		} else
-			trans = constructTransition(this.previouslyExecutedInstr, tu.getPrevLoc(), nxtLoc, tu.getAutomaton(), this.targetTetaSARTS);
+			trans = constructTransition(this.previouslyExecutedInstr, tu.getPrevLoc(), nxtLoc, tu.getAutomaton(), this.targetSymRT);
 		tu.setPrevLoc(trans.getTarget());
 		this.previouslyExecutedInstr = instr;
 	}
@@ -112,8 +112,8 @@ public abstract class AUPPAALTranslator {
 		tu.restoreToPrevChoice();
 	}
 	
-	protected abstract Location constructLocation(Instruction instr, Automaton ta, boolean targetTetaSARTS);
-	protected abstract Transition constructTransition(Instruction instr, Location prevLoc, Location nxtLoc, Automaton ta, boolean targetTetaSARTS);
+	protected abstract Location constructLocation(Instruction instr, Automaton ta, boolean targetSymRT);
+	protected abstract Transition constructTransition(Instruction instr, Location prevLoc, Location nxtLoc, Automaton ta, boolean targetSymRT);
 	
 	protected class TranslationUnit {
 		private Stack<Instruction> choices;
@@ -126,7 +126,7 @@ public abstract class AUPPAALTranslator {
 		
 		private HashMap<InstrExecContext, Location> ifInstrToLocMap;
 		
-		public TranslationUnit(MethodDesc method, boolean targetTetaSARTS) {
+		public TranslationUnit(MethodDesc method, boolean targetSymRT) {
 			this.targetMethod = method;
 			
 			this.ta = new Automaton(method.getShortMethodName());
@@ -135,7 +135,7 @@ public abstract class AUPPAALTranslator {
 			this.finalLoc = new Location(ta, "final");
 			this.finalLoc.setType(LocationType.COMMITTED);
 			this.ta.getDeclaration().add("clock executionTime;");
-			if(targetTetaSARTS) {
+			if(targetSymRT) {
 				this.ta.setParameter("const ThreadID tID");
 				Transition finalTrans = new Transition(ta, finalLoc, initLoc);
 				finalTrans.setSync(new Synchronization("run[tID]", SyncType.INITIATOR));

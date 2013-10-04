@@ -41,13 +41,13 @@ import uppaal.labels.Synchronization.SyncType;
  */
 public class UppaalTranslator {
 	private HashMap<Node, Location> visitedTreeNodesMap;
-	private boolean targetTetaSARTS;
+	private boolean targetSymRT;
 	private int uniqueID;
 	
 	private Location finalLoc;
 	
-	public UppaalTranslator(boolean targetTetaSARTS) {
-		this.targetTetaSARTS = targetTetaSARTS;
+	public UppaalTranslator(boolean targetSymRT) {
+		this.targetSymRT = targetSymRT;
 		this.uniqueID = 0;
 	}
 	
@@ -63,7 +63,7 @@ public class UppaalTranslator {
 
 		Location taRoot = recursivelyTraverseSymTree(tree.getRootNode(), ta);
 		uppaal.Transition initTrans = new uppaal.Transition(ta, initLoc, taRoot);
-		if(this.targetTetaSARTS) {
+		if(this.targetSymRT) {
 			ta.setParameter("const ThreadID tID");
 			uppaal.Transition finalTrans = new uppaal.Transition(ta, finalLoc, initLoc);
 			finalTrans.setSync(new Synchronization("run[tID]", SyncType.INITIATOR));
@@ -73,7 +73,7 @@ public class UppaalTranslator {
 		}
 		
 		NTA nta = new NTA();
-		if(!this.targetTetaSARTS) {
+		if(!this.targetSymRT) {
 			nta.getSystemDeclaration().addSystemInstance(ta.getName().getName());
 			nta.getDeclarations().add("clock executionTime;");
 		}
@@ -144,7 +144,7 @@ public class UppaalTranslator {
 	private void patchTransition(uppaal.Transition uppTrans, Node treeNode) {
 		if(!(treeNode instanceof IHasBCET) &&
 		   !(treeNode instanceof IHasWCET)) {
-			if(this.targetTetaSARTS)
+			if(this.targetSymRT)
 				uppTrans.setGuard("running[tID] = true");
 			uppTrans.setSync(new Synchronization("jvm_execute", SyncType.INITIATOR));
 			uppTrans.addUpdate("jvm_instruction = JVM_" + treeNode.getInstructionContext().getInstr().getMnemonic());
@@ -159,14 +159,14 @@ public class UppaalTranslator {
 			uppTrans.addUpdate("executionTime = 0");
 		}
 		
-		if(this.targetTetaSARTS &&
+		if(this.targetSymRT &&
 		   treeNode instanceof MonitorEnterNode)
 			uppTrans.addUpdate("monitorEnter()");
-		else if(this.targetTetaSARTS && 
+		else if(this.targetSymRT && 
 		        treeNode instanceof MonitorExitNode)
 			uppTrans.addUpdate("monitorExit()");
 		
-		else if(this.targetTetaSARTS && 
+		else if(this.targetSymRT && 
 		        treeNode instanceof RTFireSporadicNode) {
 			RTFireSporadicNode spoNode = (RTFireSporadicNode)treeNode;
 			String chanName = "fire[" + spoNode.getSporadicEventID() + "]";
@@ -194,7 +194,7 @@ public class UppaalTranslator {
 							.append("executionTime >= ")
 							.append(((IHasBCET) treeNode).getBCET());
 		}
-		if(targetTetaSARTS) {
+		if(targetSymRT) {
 			invariantBuilder.append("&&\n")
 							.append("executionTime' == running[tID]");
 		}
