@@ -20,7 +20,7 @@ public class JOPMonitorEnterNode extends RTMonitorEnterNode implements IJOPRealT
 	private int wcet;
 	
 	public JOPMonitorEnterNode(InstrContext instructionContext) {
-		super(instructionContext, null);
+		this(instructionContext, null);
 	}
 	
 	public JOPMonitorEnterNode(InstrContext instructionContext, SymbolicExecutionTree tree) {

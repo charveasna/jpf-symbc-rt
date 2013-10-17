@@ -18,7 +18,7 @@ public class JOPIfNode extends RTIfNode implements IJOPRealTimeNode {
 	private int wcet;
 	
 	public JOPIfNode(InstrContext instructionContext) {
-		super(instructionContext, null);
+		this(instructionContext, null);
 	}
 	
 	public JOPIfNode(InstrContext instructionContext, SymbolicExecutionTree tree) {

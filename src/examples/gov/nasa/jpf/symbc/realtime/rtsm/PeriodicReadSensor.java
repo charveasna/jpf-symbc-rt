@@ -60,7 +60,7 @@ public class PeriodicReadSensor extends PeriodicThread {
 	private void brickFound(int brick) {
 		if (brick > BLUE_DETECTED) {
 			//System.out.println("blue");
-			//this.motorSpooler.add(RTSM.BLUE);
+			this.motorSpooler.add(4);
 		} else {
 			//System.out.println("white");
 			this.motorSpooler.add(2);

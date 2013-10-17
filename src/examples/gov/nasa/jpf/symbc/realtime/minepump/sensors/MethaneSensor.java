@@ -51,7 +51,7 @@ public class MethaneSensor {
 		return sensorReading;
 		*/
 		//return 0;
-		return Debug.makeSymbolicInteger("SYMB");
+		return Debug.makeSymbolicInteger("SYMB_METH");
 	}
 
 	protected boolean isBrickWater(int color) {

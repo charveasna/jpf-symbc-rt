@@ -94,6 +94,7 @@ public abstract class Control {
 		io.analog[0] = Debug.makeSymbolicInteger("io0");//SimLiftIo.rd(SimLiftIo.IO_ADC1);
 		io.analog[1] = Debug.makeSymbolicInteger("io1");//SimLiftIo.rd(SimLiftIo.IO_ADC2);
 		io.analog[2] = Debug.makeSymbolicInteger("io2");//SimLiftIo.rd(SimLiftIo.IO_ADC3);
+		
 	}
 	
 	public void setVals() {

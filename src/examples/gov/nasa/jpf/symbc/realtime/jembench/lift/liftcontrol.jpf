@@ -5,7 +5,7 @@ symbolic.method=PeriodicLiftControl.run()
 #classpath=${jpf-symbc}/build/examples
 classpath=${jpf-symbc}/lib/scjNoRelativeTime_1.0.0.jar
 
-listener = gov.nasa.jpf.symbc.realtime.UPPAALTranslationListener
+listener = gov.nasa.jpf.symbc.realtime.UppaalTranslationListener
 
 symbolic.realtime.symrt = false
 symbolic.realtime.platform = jop

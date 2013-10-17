@@ -21,11 +21,13 @@ public class RealtimeSystem {
 		Iterator<RealtimeThread> rtIter = RealtimeThread.threadList.iterator();
 		while(rtIter.hasNext()) {
 			final RealtimeThread rtThread = rtIter.next();
+			
 			if(rtThread.getClass().getCanonicalName().equals(targetThread)) {
 				Thread threadWrapper = new Thread(new Runnable() {
 					
 					@Override
 					public void run() {
+						System.out.println("Thread started");
 						rtThread.run();
 					}
 				});

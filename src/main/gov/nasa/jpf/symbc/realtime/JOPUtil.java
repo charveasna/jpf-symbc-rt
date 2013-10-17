@@ -40,46 +40,51 @@ public class JOPUtil {
 		//Unsure whether there can be timing anomalies on JOP, but if 
 		//that is the case, the technique is unsound
 		int methodSizeInWords = (mi.getNumberOfInstructions() + 3) / 4;
-		String returnType = mi.getReturnType();
+		char returnType = mi.getReturnType().charAt(0);
+		
 		int l = -1;
 		switch(returnType) {
-			case "D": // Double
+			case 'D': // Double
 				l = JOPUtil.calculateI(false, methodSizeInWords);
 				if (l <= 11)
 					l = 0;
 				else
 					l -= 11;
 				break;
-			case "F": // Float
+			case 'F': // Float
 				l = JOPUtil.calculateI(false, methodSizeInWords);
 				if (l <= 10)
 					l = 0;
 				else
 					l -= 10;
 				break;
-			case "Z": // Boolean
-			case "I": // Integer
+			case 'B': // Byte
+			case 'Z': // Boolean
+			case 'I': // Integer
+			case 'S': // Short
+			case 'C': // Short
 				l = JOPUtil.calculateI(false, methodSizeInWords);
 				if (l <= 10)
 					l = 0;
 				else
 					l -= 10;
 				break;
-			case "J": // Reference
+			case 'L': // Reference
+			case '[': // array
 				l = JOPUtil.calculateI(false, methodSizeInWords);
 				if (l <= 11)
 					l = 0;
 				else
 					l -= 11;
 				break;
-			case "L": // Long
+			case 'J': // Long
 				l = JOPUtil.calculateI(false, methodSizeInWords);
 				if (l <= 10)
 					l = 0;
 				else
 					l -= 10;
 				break;
-			case "V": // Void
+			case 'V': // Void
 				l = JOPUtil.calculateI(false, methodSizeInWords);
 				if (l <= 9)
 					l = 0;
@@ -534,8 +539,10 @@ public class JOPUtil {
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
 		case (145):
-			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
-					+ "]");
+			wcet = 1;
+			break;
+			//throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+			//		+ "]");
 		case (146):
 			wcet = 2;
 			break;

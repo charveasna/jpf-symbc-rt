@@ -1,5 +1,6 @@
 package gov.nasa.jpf.symbc.realtime.rtsm;
 
+import gov.nasa.jpf.symbc.Debug;
 import gov.nasa.jpf.symbc.realtime.rtsm.util.BoundedBuffer;
 
 import javax.scj.PeriodicParameters;
@@ -27,7 +28,7 @@ public class PeriodicMotorSpooler extends PeriodicThread {
 
     public void add(int color) {
         if (color == 2){
-            //whiteBuffer.enqueue(RealtimeSystem.currentTimeMicros());
+            whiteBuffer.enqueue(1000);
         } else if (color == 4){
             blueBuffer.enqueue(1000);
         }
@@ -59,12 +60,12 @@ public class PeriodicMotorSpooler extends PeriodicThread {
             result = blueBuffer.peek();
             if (blueState == 0){
 	            if ((1000 - result) >= BLUE_PUSHOFF_TIME) {
-	                //RealtimeSystem.fire(4);
+	                RealtimeSystem.fire(4);
 	                blueState = 1;
 	            }
             } else if (blueState == 1){
 	            if ((1000 - result) >= BLUE_PUSHOFF_TIME + REVERSE_OFFSET) {
-	                //RealtimeSystem.fire(4);
+	                RealtimeSystem.fire(4);
 	                blueState = 2;
 	            }
             } else if (blueState == 2){

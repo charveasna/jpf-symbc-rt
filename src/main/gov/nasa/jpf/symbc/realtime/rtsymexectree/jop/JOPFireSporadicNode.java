@@ -22,7 +22,7 @@ public class JOPFireSporadicNode extends RTFireSporadicNode implements IJOPRealT
 	private int wcet;
 	
 	public JOPFireSporadicNode(InstrContext instructionContext) {
-		super(instructionContext, null);
+		this(instructionContext, null);
 	}
 	
 	public JOPFireSporadicNode(InstrContext instructionContext, SymbolicExecutionTree tree) {

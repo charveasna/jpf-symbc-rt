@@ -10,6 +10,7 @@ import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasBCET;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasWCET;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.RTFireSporadicNode;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.SporadicEventSpecException;
+import gov.nasa.jpf.symbc.symexectree.InstrContext;
 import gov.nasa.jpf.symbc.symexectree.MethodDesc;
 import gov.nasa.jpf.symbc.symexectree.Transition;
 import gov.nasa.jpf.symbc.symexectree.structure.MonitorEnterNode;
@@ -17,7 +18,10 @@ import gov.nasa.jpf.symbc.symexectree.structure.MonitorExitNode;
 import gov.nasa.jpf.symbc.symexectree.structure.Node;
 import gov.nasa.jpf.symbc.symexectree.structure.SymbolicExecutionTree;
 import gov.nasa.jpf.symbc.symexectree.visualizer.PrettyPrinterException;
+import gov.nasa.jpf.vm.ClassInfo;
 import gov.nasa.jpf.vm.Instruction;
+import gov.nasa.jpf.vm.MethodInfo;
+import gov.nasa.jpf.vm.StackFrame;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -135,9 +139,22 @@ public class UppaalTranslator {
 		Instruction instr = node.getInstructionContext().getInstr();
 		if(instr.getByteCode() > 255)
 			return true;
-		if(instr.getMethodInfo().getClassInfo().getPackageName().contains("gov.nasa.jpf.symbc") &&
-		   instr.getMethodInfo().getClassName().equals("Debug"))
+		/*if(instr.getMethodInfo().getClassInfo().getPackageName().contains("gov.nasa.jpf.symbc") &&
+		   instr.getMethodInfo().getClassName().equals("Debug"))*/
+		if(this.isInCallChain(node.getInstructionContext(), "gov.nasa.jpf.symbc", "Debug"))
 			return true;
+		return false;
+	}
+	
+	private boolean isInCallChain(InstrContext instrCtx, String packageName, String className) {
+		StackFrame frame = instrCtx.getFrame();
+		while(frame != null) {
+			ClassInfo cInfo = frame.getMethodInfo().getClassInfo();
+			if(cInfo.getPackageName().equals(packageName) &&
+			   cInfo.getSimpleName().equals(className))
+				return true;
+			frame = frame.getPrevious();
+		}
 		return false;
 	}
 	
@@ -145,9 +162,9 @@ public class UppaalTranslator {
 		if(!(treeNode instanceof IHasBCET) &&
 		   !(treeNode instanceof IHasWCET)) {
 			if(this.targetSymRT)
-				uppTrans.setGuard("running[tID] = true");
+				uppTrans.setGuard("running[tID] == true");
 			uppTrans.setSync(new Synchronization("jvm_execute", SyncType.INITIATOR));
-			uppTrans.addUpdate("jvm_instruction = JVM_" + treeNode.getInstructionContext().getInstr().getMnemonic());
+			uppTrans.addUpdate("jvm_instruction = JVM_" + treeNode.getInstructionContext().getInstr().getMnemonic().toUpperCase());
 		} else if((treeNode instanceof IHasBCET) &&
 				  (treeNode instanceof IHasWCET)) {
 			uppTrans.setGuard("executionTime >= " + ((IHasBCET) treeNode).getBCET() + "&&\n" +
@@ -184,17 +201,20 @@ public class UppaalTranslator {
 	private Location translateTreeNode(Node treeNode, Automaton ta) {
 		Instruction instr = treeNode.getInstructionContext().getInstr();
 		Location newLoc = new Location(ta, instr.getMnemonic() + "_" + this.getUniqueIDString());
+		boolean isStaticET = false;
 		StringBuilder invariantBuilder = new StringBuilder();
 		if(treeNode instanceof IHasWCET) {
 			invariantBuilder.append("executionTime <= ")
 							.append(((IHasWCET) treeNode).getWCET());
+			isStaticET = true;
 		}
-		if(treeNode instanceof IHasBCET) {
+		/*if(treeNode instanceof IHasBCET) {
 			invariantBuilder.append("&&\n")
 							.append("executionTime >= ")
 							.append(((IHasBCET) treeNode).getBCET());
-		}
-		if(targetSymRT) {
+			isStaticET = true;
+		}*/
+		if(targetSymRT && isStaticET) {
 			invariantBuilder.append("&&\n")
 							.append("executionTime' == running[tID]");
 		}

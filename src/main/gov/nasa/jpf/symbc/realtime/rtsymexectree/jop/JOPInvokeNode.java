@@ -21,7 +21,7 @@ public class JOPInvokeNode extends RTInvokeNode implements IJOPRealTimeNode {
 	private int wcet;
 	
 	public JOPInvokeNode(InstrContext instructionContext) {
-		super(instructionContext, null);
+		this(instructionContext, null);
 	}
 	
 	public JOPInvokeNode(InstrContext instructionContext, SymbolicExecutionTree tree) {

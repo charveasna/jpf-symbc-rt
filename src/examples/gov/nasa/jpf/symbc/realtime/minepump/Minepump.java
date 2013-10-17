@@ -75,11 +75,11 @@ public class Minepump {
 
 				// Sensors
 				int criticalMethaneLevel = 2;
-				int brickHistorySize = 5;
+				int brickHistorySize = 2;
 				MethaneSensor methaneSensor = new MethaneSensor(SENSOR_ID_METHANE, criticalMethaneLevel, brickHistorySize);
 				
-				int consecutiveNoWaterReadings = 3;
-				int consecutiveHighWaterReadings = 3;
+				int consecutiveNoWaterReadings = 1;
+				int consecutiveHighWaterReadings = 1;
 				HighWaterSensor highWaterSensor = new HighWaterSensor(SENSOR_ID_HIGH_WATER, consecutiveHighWaterReadings);
 				LowWaterSensor lowWaterSensor = new LowWaterSensor(SENSOR_ID_LOW_WATER, consecutiveNoWaterReadings);
 

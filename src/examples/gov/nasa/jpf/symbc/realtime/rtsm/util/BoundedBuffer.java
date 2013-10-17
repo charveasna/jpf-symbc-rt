@@ -1,5 +1,7 @@
 package gov.nasa.jpf.symbc.realtime.rtsm.util;
 
+import gov.nasa.jpf.symbc.Debug;
+
 public class BoundedBuffer {
 	private int[] buf;
 	private int in = 0;
@@ -22,7 +24,7 @@ public class BoundedBuffer {
 	}
 
 	public boolean isEmpty() {
-		return count == 0;
+		return Debug.makeSymbolicBoolean("emptysym");//count == 0;
 	}
 
 	public int peek() {

@@ -2,5 +2,6 @@ target=gov.nasa.jpf.symbc.realtime.algorithms.BubbleSort
 classpath=${jpf-symbc}/build/tests;${jpf-symbc}/../SARTSBenchmarks/bin;${jpf-symbc}/../scjNoRelativeTime/bin;${jpf-symbc}/../JOP/bin
 sourcepath=${jpf-symbc}/src/tests;${jpf-symbc}/../SARTSBenchmarks/src;${jpf-symbc}/../scjNoRelativeTime/src;${jpf-symbc}/../JOP/src;
 
+
 symbolic.method = gov.nasa.jpf.symbc.realtime.algorithms.BubbleSort.runBubbleSort()
 listener = gov.nasa.jpf.symbc.realtime.UppaalTranslationListener

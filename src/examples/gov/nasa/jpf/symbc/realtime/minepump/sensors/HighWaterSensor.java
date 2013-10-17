@@ -18,6 +18,8 @@
  ******************************************************************************/
 package gov.nasa.jpf.symbc.realtime.minepump.sensors;
 
+import gov.nasa.jpf.symbc.Debug;
+
 
 public class HighWaterSensor {
 
@@ -44,7 +46,7 @@ public class HighWaterSensor {
 		//this probably has to be debugged :) especially the mysterious bit shift....
 		//int sensorReading = Sensors.getBufferedSensor(this.sensorId)>> 1;
 		//return sensorReading;
-		return 0;
+		return Debug.makeSymbolicInteger("SYMB_HIGH");
 	}
 
 	protected boolean isBrickWater(int color) {

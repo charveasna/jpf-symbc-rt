@@ -20,7 +20,7 @@ public class JOPReturnNode extends RTReturnNode implements IJOPRealTimeNode {
 	private int wcet;
 	
 	public JOPReturnNode(InstrContext instructionContext) {
-		super(instructionContext, null);
+		this(instructionContext, null);
 	}
 	
 	public JOPReturnNode(InstrContext instructionContext, SymbolicExecutionTree tree) {

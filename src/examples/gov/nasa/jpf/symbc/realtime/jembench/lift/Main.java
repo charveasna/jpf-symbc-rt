@@ -7,7 +7,10 @@ public class Main {
 
 	public static void main(String[] args) {
 		
-		PeriodicLiftControl ctrl = new PeriodicLiftControl(new PeriodicParameters(2000));
-		ctrl.run();
+		new PeriodicLiftControl(new PeriodicParameters(20));
+		PeriodicLiftControl ctrl = new PeriodicLiftControl(new PeriodicParameters(20));
+		//ctrl.run();
+		
+		RealtimeSystem.start();
 	}
 }

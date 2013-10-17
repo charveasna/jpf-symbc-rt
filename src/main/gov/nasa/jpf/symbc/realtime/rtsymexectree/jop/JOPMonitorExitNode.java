@@ -21,7 +21,7 @@ public class JOPMonitorExitNode extends RTMonitorExitNode implements IJOPRealTim
 	private int wcet;
 	
 	public JOPMonitorExitNode(InstrContext instructionContext) {
-		super(instructionContext, null);
+		this(instructionContext, null);
 	}
 	
 	public JOPMonitorExitNode(InstrContext instructionContext, SymbolicExecutionTree tree) {

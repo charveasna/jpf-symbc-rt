@@ -15,6 +15,8 @@
  ******************************************************************************/
 package gov.nasa.jpf.symbc.realtime.minepump.sensors;
 
+import gov.nasa.jpf.symbc.Debug;
+
 
 
 public class LowWaterSensor {
@@ -42,7 +44,7 @@ public class LowWaterSensor {
 	/*	int sensorReading = Sensors.getBufferedSensor(this.sensorId)>> 1;
 		return sensorReading;*/
 		
-		return 0;
+		return Debug.makeSymbolicInteger("SYMB_LOW");
 	}
 
 	protected boolean isBrickWater(int color) {

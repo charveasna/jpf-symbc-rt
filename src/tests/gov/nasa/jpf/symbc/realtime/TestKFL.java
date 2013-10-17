@@ -17,8 +17,8 @@ public class TestKFL extends InvokeTest {
 	private static final String SYM_METHOD = "+symbolic.method=gov.nasa.jpf.symbc.realtime.jembench.kfl.Mast.run()";
 
 	private static final String CLPATH = "+classpath=${jpf-symbc}/lib/scjNoRelativeTime_1.0.0.jar";
-	//private static final String LISTENER = "+listener = gov.nasa.jpf.symbc.realtime.UppaalTranslationListener";
-	private static final String LISTENER = "+listener = gov.nasa.jpf.symbc.symexectree.visualizer.SymExecTreeVisualizerListener";
+	private static final String LISTENER = "+listener = gov.nasa.jpf.symbc.realtime.UppaalTranslationListener";
+	//private static final String LISTENER = "+listener = gov.nasa.jpf.symbc.symexectree.visualizer.SymExecTreeVisualizerListener";
 	private static final String OUTPUT = "+symbolic.visualizer.basepath = ${jpf-symbc-rt}/";
 	private static final String FORMAT = "+symbolic.visualizer.outputformat = eps";
 	
