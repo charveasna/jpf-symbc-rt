@@ -82,8 +82,8 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 
 	@Override
 	protected void doneConstructingSymbExecTree(LinkedList<SymbolicExecutionTree> trees) {
-		if(trees == null)
-			throw new UppaalTranslatorException("No symbolic execution trees were generated!");
+		if(trees.isEmpty())
+			throw new UppaalTranslatorException("No symbolic execution trees were generated! Have you set the target method correctly?");
 		UppaalTranslator translator = new UppaalTranslator(this.targetSymRT);
 		RTOptimizer optimizer = null;
 		if(this.optimize) {
