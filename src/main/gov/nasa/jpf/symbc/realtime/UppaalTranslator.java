@@ -17,7 +17,7 @@ import gov.nasa.jpf.symbc.symexectree.structure.MonitorEnterNode;
 import gov.nasa.jpf.symbc.symexectree.structure.MonitorExitNode;
 import gov.nasa.jpf.symbc.symexectree.structure.Node;
 import gov.nasa.jpf.symbc.symexectree.structure.SymbolicExecutionTree;
-import gov.nasa.jpf.symbc.symexectree.visualizer.PrettyPrinterException;
+import gov.nasa.jpf.symbc.symexectree.visualizer.VisualizerException;
 import gov.nasa.jpf.vm.ClassInfo;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MethodInfo;
