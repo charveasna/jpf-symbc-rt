@@ -1,0 +1,15 @@
+target=gov.nasa.jpf.symbc.realtime.scd_micro.Main
+
+symbolic.method=gov.nasa.jpf.symbc.realtime.scd_micro.lookForCollisions(con#sym)
+#symbolic.method=gov.nasa.jpf.symbc.realtime.scd_micro.TransientDetectorScopeEntry.run()
+#classpath=${jpf-symbc}/build/examples
+classpath=${jpf-symbc}/lib/scjNoRelativeTime_1.0.0.jar
+
+listener = gov.nasa.jpf.symbc.realtime.UppaalTranslationListener
+
+symbolic.lazy = true
+symbolic.realtime.symrt = false
+symbolic.realtime.platform = jop
+symbolic.realtime.optimize = true
+symbolic.realtime.outputpath = ./output/
+	
