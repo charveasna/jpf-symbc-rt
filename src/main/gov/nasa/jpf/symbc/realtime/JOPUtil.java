@@ -889,8 +889,8 @@ public class JOPUtil {
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
 		default:
-			System.err.println("Unknown opcode: (" + opcode + ") for bytecode: " + instruction.getMnemonic() + " appearing: " + instruction.getFileLocation());
-			System.err.println("Warning: defaulting to WCET = 1");
+			//System.err.println("Unknown opcode: (" + opcode + ") for bytecode: " + instruction.getMnemonic() + " appearing: " + instruction.getFileLocation());
+			//System.err.println("Warning: defaulting to WCET = 1");
 		}
 		return wcet;
 	}

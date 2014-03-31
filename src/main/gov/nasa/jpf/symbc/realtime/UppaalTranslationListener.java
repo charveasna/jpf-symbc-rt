@@ -3,12 +3,16 @@
  */
 package gov.nasa.jpf.symbc.realtime;
 
+import java.io.IOException;
 import java.util.LinkedList;
 
 import uppaal.NTA;
 import gov.nasa.jpf.Config;
 import gov.nasa.jpf.JPF;
 import gov.nasa.jpf.PropertyListenerAdapter;
+import gov.nasa.jpf.search.Search;
+import gov.nasa.jpf.symbc.realtime.loopbounds.LoopBound;
+import gov.nasa.jpf.symbc.realtime.loopbounds.LoopBoundExtractor;
 import gov.nasa.jpf.symbc.realtime.optimization.RTOptimizer;
 import gov.nasa.jpf.symbc.realtime.optimization.SeqInstructionReduction;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPNodeFactory;
@@ -17,8 +21,12 @@ import gov.nasa.jpf.symbc.realtime.rtsymexectree.platformagnostic.PlatformAgnost
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.timingdoc.TimingDocNodeFactory;
 import gov.nasa.jpf.symbc.symexectree.ASymbolicExecutionTreeListener;
 import gov.nasa.jpf.symbc.symexectree.NodeFactory;
+import gov.nasa.jpf.symbc.symexectree.SymExecTreeUtils;
 import gov.nasa.jpf.symbc.symexectree.structure.SymbolicExecutionTree;
+import gov.nasa.jpf.util.ObjectList;
+import gov.nasa.jpf.util.Source;
 import gov.nasa.jpf.vm.Instruction;
+import gov.nasa.jpf.vm.MethodInfo;
 import gov.nasa.jpf.vm.ThreadInfo;
 import gov.nasa.jpf.vm.VM;
 
@@ -60,6 +68,51 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 		this.generateQueries = conf.getBoolean("symbolic.realtime.generatequeries", !this.targetSymRT);
 	}
 
+	@Override
+	public void instructionExecuted(VM vm, ThreadInfo currentThread, Instruction nextInstruction, Instruction executedInstruction) {
+		if (!vm.getSystemState().isIgnored()) {
+			MethodInfo mi = executedInstruction.getMethodInfo();
+			if(SymExecTreeUtils.isInSymbolicCallChain(mi, currentThread.getTopFrame(), this.jpfConf)) {
+				if(executedInstruction.isBackJump()) {
+					handleLoop(executedInstruction, vm);
+				}
+			}
+		}
+	}
+	
+	@Override
+	public void searchConstraintHit(Search search) {
+		if (!search.isEndState() && !search.isErrorState()) {
+			String searchDepth = super.jpfConf.getString("search.depth_limit");
+			System.err.println("Warning: Search depth " + searchDepth + " has been hit! You may want to increase the bound or adjust loop bounds. Otherwise, the timing model is possibly unsafe!");
+		}
+	}
+	
+	private static class LoopProcessedMarker { public boolean containedBound;}
+	private void handleLoop(Instruction instr, VM vm) {
+		//Maybe this is a hack...
+		if(!instr.hasAttr(LoopProcessedMarker.class)) {
+			String fileLocation = instr.getFileLocation();
+			fileLocation = fileLocation.substring(0, fileLocation.indexOf(':'));
+			LoopBound lb = new LoopBound(LoopBoundExtractor.extractBound(fileLocation, instr.getLineNumber()));
+			LoopProcessedMarker marker = new LoopProcessedMarker();
+			if(lb.getLoopBound() >= 0) {
+				instr.addAttr(lb);
+				marker.containedBound = true;
+			} else
+				marker.containedBound = false;
+			instr.addAttr(marker);
+		}
+		if(instr.getAttr(LoopProcessedMarker.class).containedBound) {
+			LoopBound lb = instr.getAttr(LoopBound.class);
+			int newBound = lb.getLoopBound() - 1;
+			if (newBound <= 0){
+				vm.getSystemState().setIgnored(true);
+			}
+			lb.setLoopBound(newBound);
+		}
+	}
+	
 	@Override
 	protected NodeFactory getNodeFactory() {
 		this.targetPlatform = super.jpfConf.getString("symbolic.realtime.platform", "").toLowerCase();

@@ -1,7 +1,13 @@
-target=gov.nasa.jpf.symbc.realtime.algorithms.BubbleSort
+target=gov.nasa.jpf.symbc.realtime.algorithms.BubbleSortTetaJ
 classpath=${jpf-symbc}/build/tests;${jpf-symbc}/../SARTSBenchmarks/bin;${jpf-symbc}/../scjNoRelativeTime/bin;${jpf-symbc}/../JOP/bin
-sourcepath=${jpf-symbc}/src/tests;${jpf-symbc}/../SARTSBenchmarks/src;${jpf-symbc}/../scjNoRelativeTime/src;${jpf-symbc}/../JOP/src;
+sourcepath=${jpf-symbc}/src/tests;${jpf-symbc}/../SARTSBenchmarks/src;${jpf-symbc}/../scjNoRelativeTime/src;${jpf-symbc}/../JOP/src;${jpf-symbc-rt}/src/examples
 
+#symbolic.realtime.platform = timingdoc
+#symbolic.realtime.timingdocpath = /home/luckow/workspace/TetaSARTS-1.0/timing_models/hvmavr.xml
 
-symbolic.method = gov.nasa.jpf.symbc.realtime.algorithms.BubbleSort.runBubbleSort()
+symbolic.method = gov.nasa.jpf.symbc.realtime.algorithms.BubbleSortTetaJ.bubble_srt()
 listener = gov.nasa.jpf.symbc.realtime.UppaalTranslationListener
+symbolic.realtime.optimize = true
+
+
+#symbolic.dp=no_solver

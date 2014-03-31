@@ -38,7 +38,7 @@ public class QueriesFileGenerator {
 	private static String getWCETStr(Automaton aut) {
 		StringBuilder cmtSb = new StringBuilder();
 		cmtSb.append("/*\n")
-			 .append("To generate symbolic trace to WCET, use query: A[] executionTime < \"result from sup query here -1\"\n")
+			 .append("To generate symbolic trace to WCET, use query: E<> executionTime == \"result from sup query here\"\n")
 			 .append("*/\n")
 			 .append("sup ").append(getBasicExecTimeStr(aut));
 		return cmtSb.toString();

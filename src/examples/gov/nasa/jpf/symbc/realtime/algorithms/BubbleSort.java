@@ -8,7 +8,7 @@ import javax.scj.RealtimeSystem;
 
 public class BubbleSort extends PeriodicThread {
 
-	private static final int SIZE = 4;
+	private static final int SIZE = 10;
 
 	public static void main(String[] args) {
 		//new BubbleSort(new PeriodicParameters(100));
@@ -23,10 +23,12 @@ public class BubbleSort extends PeriodicThread {
 		super(pp);
 	}
 	
+	private static int ar[] = getNumbers();
+	
 	public void runBubbleSort() {
 		int i;
 		int s = SIZE;
-		int ar[] = getNumbers();
+		//int ar[] = getNumbers();
 		int tmp;
 		boolean repeat;
 
@@ -49,7 +51,7 @@ public class BubbleSort extends PeriodicThread {
 		}
 	}
 	
-	public int[] getNumbers() {
+	public static int[] getNumbers() {
 		int[] array = new int[2*SIZE];
 		int s =  SIZE;
 		for(int i=0;i<s;i++){
