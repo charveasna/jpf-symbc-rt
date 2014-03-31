@@ -16,8 +16,6 @@ jpf-symbc-rt = ${user.home}/workspace/jpf-symbc-rt
 Then, add the extension to jpf extension variable in the site.properties file:
 extensions=${jpf-core},${jpf-symbc},${jpf-symbc-rt}
 
-That's it. You are now ready to conduct real-time analyses with SPF-RT :)
-
 Setting up SPF-RT
 -----------------
 For inspiration, look in some of the accompanying .jpf configuration files located in e.g. ${jpf-symbc-rt}/src/examples.
@@ -47,9 +45,14 @@ You can use this option to optimize the timing model. As of the current version,
 symbolic.realtime.generatequeries 	= 	[true|false]				(default: true)
 Use this option to automatically generate the UPPAAL queries for conducting the analyses as reachability problems.
 
+symbolic.realtime.progressmeasure	= 	[true|false]				(default: true)
+Generate UPPAAL progress measure to spped up verification and reduce memory requirements
+
 Contact:
 -------
-The Mercurial Java project repository of SPF-RT (jpf-symbc-rt) can be found on http://babelfish.arc.nasa.gov/hg/jpf/jpf-symbc-rt.
+The Mercurial Java project repository of SPF-RT (jpf-symbc-rt) can be found on https://bitbucket.org/luckow/jpf-symbc-rt.
+The old respository was http://babelfish.arc.nasa.gov/hg/jpf/jpf-symbc-rt (which is now outdated!).
+The officielt
 For details on SymRT, consult http://people.cs.aau.dk/~luckow/symrt
 
 Kasper S. Luckow <luckow@cs.aau.dk>

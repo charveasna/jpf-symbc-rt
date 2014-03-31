@@ -6,6 +6,7 @@ package gov.nasa.jpf.symbc.realtime;
 import gov.nasa.jpf.jvm.bytecode.IfInstruction;
 import gov.nasa.jpf.jvm.bytecode.InvokeInstruction;
 import gov.nasa.jpf.jvm.bytecode.ReturnInstruction;
+import gov.nasa.jpf.symbc.realtime.optimization.pm.ProgressMeasureUtil;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasBCET;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasWCET;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.RTFireSporadicNode;
@@ -46,12 +47,16 @@ import uppaal.labels.Synchronization.SyncType;
 public class UppaalTranslator {
 	private HashMap<Node, Location> visitedTreeNodesMap;
 	private boolean targetSymRT;
+	private boolean generateProgressMeasure;
+	private static final String PM_VAR_N = "pm";
+	
 	private int uniqueID;
 	
 	private Location finalLoc;
 	
-	public UppaalTranslator(boolean targetSymRT) {
+	public UppaalTranslator(boolean targetSymRT, boolean useProgressMeasure) {
 		this.targetSymRT = targetSymRT;
+		this.generateProgressMeasure = useProgressMeasure;
 		this.uniqueID = 0;
 	}
 	
@@ -81,6 +86,12 @@ public class UppaalTranslator {
 			nta.getSystemDeclaration().addSystemInstance(ta.getName().getName());
 			nta.getDeclarations().add("clock executionTime;");
 		}
+		if(this.generateProgressMeasure) {
+			int pmUB = ProgressMeasureUtil.calculateMaxBranches(tree);
+			nta.getDeclarations().add("int[0," + pmUB + "] " +  PM_VAR_N + " = 0;");
+			nta.getSystemDeclaration().addProgressMeasure(PM_VAR_N);
+		}
+		
 		nta.addAutomaton(ta);
 		return nta;
 	}
@@ -195,7 +206,10 @@ public class UppaalTranslator {
 				finalGuard += " &&\n" + prevGuard.toString();
 			uppTrans.setGuard(finalGuard);
 		}
-				
+		
+		if(treeNode.getOutgoingTransitions().size() > 1 && this.generateProgressMeasure) {
+			uppTrans.addUpdate(PM_VAR_N + "++");
+		}		
 	}
 	
 	private Location translateTreeNode(Node treeNode, Automaton ta) {
