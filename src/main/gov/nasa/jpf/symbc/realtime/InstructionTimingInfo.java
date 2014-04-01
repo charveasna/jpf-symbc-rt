@@ -14,7 +14,11 @@ public class InstructionTimingInfo {
 		this.wcet = wcet;
 		this.mnemonic = mnemonic;
 	}
-
+	
+	public InstructionTimingInfo makeCopy() {
+		return new InstructionTimingInfo(mnemonic, opcode, bcet, wcet);
+	}
+	
 	public int getOpcode() {
 		return opcode;
 	}

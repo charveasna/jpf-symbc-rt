@@ -27,7 +27,7 @@ public class TimingDoc extends HashMap<String, InstructionTimingInfo>{
 			mnemonic = ((String)key).toLowerCase();
 		else
 			throw new RealTimeRuntimeException("Cannot retrieve timing info for key with type [" + key.toString() + "]");
-		tInfo = super.get(mnemonic);
+		tInfo = super.get(mnemonic).makeCopy();
 		if(tInfo != null)
 			return tInfo;
 		else {

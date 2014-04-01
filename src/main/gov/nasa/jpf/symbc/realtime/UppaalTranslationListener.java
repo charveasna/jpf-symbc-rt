@@ -3,6 +3,7 @@
  */
 package gov.nasa.jpf.symbc.realtime;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -53,18 +54,24 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 	 * by SPF to a timed automaton amenable to model checking using UPPAAL.
 	 * The configurations for this listener are:
 	 * 
-	 * symbolic.realtime.platform 			=	[jop|agnostic|timingdoc]	(default: jop)
-	 * symbolic.realtime.targetsymrt	 	=	[true|false]				(default: false)
-	 * symbolic.realtime.outputbasepath 	=	<output path>				(default: ./)
-	 * symbolic.realtime.optimize 			= 	[true|false]				(default: true)
-	 * symbolic.realtime.progressmeasure	= 	[true|false]				(default: true)
-	 * symbolic.realtime.generatequeries 	= 	[true|false]				(default: true)
+	 * symbolic.realtime.platform 				=	[jop|agnostic|timingdoc]	(default: jop)
+	 * symbolic.realtime.targetsymrt	 		=	[true|false]				(default: false)
+	 * symbolic.realtime.outputbasepath 		=	<output path>				(default: ./)
+	 * symbolic.realtime.optimize 				= 	[true|false]				(default: true)
+	 * symbolic.realtime.progressmeasure		= 	[true|false]				(default: true)
+	 * symbolic.realtime.generatequeries 		= 	[true|false]				(default: true)
 	 * 
 	 * If the target platform is 'timingdoc', a Timing Doc - describing the execution
 	 * times of the individual Java Bytecodes of the particular platform - must be
 	 * supplied as well using:
+	 * symbolic.realtime.timingdocpath 			= 	<source path>
 	 * 
-	 * symbolic.realtime.timingdocpath = <source path>
+	 * ------JOP-specific settings---------------------------------------------------------
+	 * symbolic.realtime.jop.cachepolicy		=	[miss|hit|simulate]			(default: miss)
+	 * symbolic.realtime.jop.readcycles			=	[:number:]					(default: 6 (applies for Cyclone EP1C6))
+	 * symbolic.realtime.jop.writecycles		=	[:number:]					(default: 6 (applies for Cyclone EP1C6))
+	 * symbolic.realtime.jop.memoryaccesscycles	=	[:number:]					(default: 3 (applies for Cyclone EP1C6))
+	 * 
 	 */
 	
 	private static final String DEF_OUTPUT_PATH = "./";
@@ -246,6 +253,7 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 			ntaSystem.writePrettyLayoutModelToFile(this.getNTAFileName(ntaSystem, tree));
 			if(this.generateQueries)
 				QueriesFileGenerator.writeQueriesFile(ntaSystem, getQueriesFileName(ntaSystem, tree));
+			System.out.println("Wrote model of target method " + tree.getTargetMethod().getShortMethodName() + " to " + new File(outputBasePath).getAbsolutePath());
 		}
 	}
 	

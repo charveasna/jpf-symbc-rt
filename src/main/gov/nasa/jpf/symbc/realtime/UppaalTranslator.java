@@ -49,6 +49,7 @@ public class UppaalTranslator {
 	private boolean targetSymRT;
 	private boolean generateProgressMeasure;
 	private static final String PM_VAR_N = "pm";
+	private static final String JBC_CLOCL_N = "jbcExecTime";
 	
 	private int uniqueID;
 	
@@ -68,7 +69,7 @@ public class UppaalTranslator {
 		ta.setInit(initLoc);
 		this.finalLoc = new Location(ta, "final");
 		this.finalLoc.setType(LocationType.COMMITTED);
-		ta.getDeclaration().add("clock executionTime;");
+		ta.getDeclaration().add("clock " + JBC_CLOCL_N + ";");
 
 		Location taRoot = recursivelyTraverseSymTree(tree.getRootNode(), ta);
 		uppaal.Transition initTrans = new uppaal.Transition(ta, initLoc, taRoot);
@@ -178,13 +179,13 @@ public class UppaalTranslator {
 			uppTrans.addUpdate("jvm_instruction = JVM_" + treeNode.getInstructionContext().getInstr().getMnemonic().toUpperCase());
 		} else if((treeNode instanceof IHasBCET) &&
 				  (treeNode instanceof IHasWCET)) {
-			uppTrans.setGuard("executionTime >= " + ((IHasBCET) treeNode).getBCET() + "&&\n" +
-							  "executionTime <= " + ((IHasWCET) treeNode).getWCET());
-			uppTrans.addUpdate("executionTime = 0");
+			uppTrans.setGuard(JBC_CLOCL_N + " >= " + ((IHasBCET) treeNode).getBCET() + " &&\n" +
+					JBC_CLOCL_N + " <= " + ((IHasWCET) treeNode).getWCET());
+			uppTrans.addUpdate(JBC_CLOCL_N + " = 0");
 		}
 		else if(treeNode instanceof IHasWCET) {
-			uppTrans.setGuard("executionTime == " + ((IHasWCET) treeNode).getWCET());
-			uppTrans.addUpdate("executionTime = 0");
+			uppTrans.setGuard(JBC_CLOCL_N + " == " + ((IHasWCET) treeNode).getWCET());
+			uppTrans.addUpdate(JBC_CLOCL_N + " = 0");
 		}
 		
 		if(this.targetSymRT &&
@@ -218,7 +219,7 @@ public class UppaalTranslator {
 		boolean isStaticET = false;
 		StringBuilder invariantBuilder = new StringBuilder();
 		if(treeNode instanceof IHasWCET) {
-			invariantBuilder.append("executionTime <= ")
+			invariantBuilder.append(JBC_CLOCL_N + " <= ")
 							.append(((IHasWCET) treeNode).getWCET());
 			isStaticET = true;
 		}
@@ -230,7 +231,7 @@ public class UppaalTranslator {
 		}*/
 		if(targetSymRT && isStaticET) {
 			invariantBuilder.append("&&\n")
-							.append("executionTime' == running[tID]");
+							.append(JBC_CLOCL_N + "' == running[tID]");
 		}
 		newLoc.setInvariant(invariantBuilder.toString());
 		newLoc.setComment(instr.getFilePos());
