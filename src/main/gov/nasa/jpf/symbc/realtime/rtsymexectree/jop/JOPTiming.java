@@ -1,8 +1,10 @@
 /**
  * 
  */
-package gov.nasa.jpf.symbc.realtime;
+package gov.nasa.jpf.symbc.realtime.rtsymexectree.jop;
 
+import gov.nasa.jpf.symbc.realtime.InstructionNotImplementedException;
+import gov.nasa.jpf.symbc.realtime.UnknownReturnTypeException;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MethodInfo;
 
@@ -10,94 +12,29 @@ import gov.nasa.jpf.vm.MethodInfo;
  * @author Kasper S. Luckow <luckow@cs.aau.dk>
  *
  */
-public class JOPUtil {
+public class JOPTiming {
 
-	private static final int r = 1;
-	private static final int w = 1;
-	private static int n;
+	private int r;
+	private int w;
+	private int c;
 	
-	/*
-	 * This is for computing the MethodSwitchCost when conducting method calls
-	 * TODO incorporate this into the analysis
+	public JOPTiming(int ram_cnt) {
+		r = w = ((ram_cnt > 1) ? ram_cnt - 1 : 0);
+		c = ((r > 1) ? r : 1);
+	}
+	
+	public int calculateCacheLoadTime(MethodInfo method, boolean cacheHit) {
+		int n = (method.getNumberOfInstructions() + 3) / 4; // methodsize in 32bit words
+		return (cacheHit) ? 4 : 6 + (n + 1) * (1 + c);
+	}
+	
+	/**
+	 * Execution times are based on the listing in JOP Handbook
+	 * @param instruction
+	 * @return
+	 * @throws InstructionNotImplementedException
 	 */
-	public static int calculateI(boolean hit, int n) {
-		int c = r-1;
-		int b = -1;
-		if (n <= 0) {
-			throw new RuntimeException("The method size has not been set!");
-		} else {
-			if (hit) {
-				b = 4;
-			} else {
-				b = 6 + (n + 1) * (2 + c);
-			}
-		}
-		return b;
-	}
-	
-	public static int calculateMethodSwitchCost(boolean cachehit, MethodInfo mi) {
-		//TODO: We are currently assuming a cache miss always occur. 
-		//Unsure whether there can be timing anomalies on JOP, but if 
-		//that is the case, the technique is unsound
-		int methodSizeInWords = (mi.getNumberOfInstructions() + 3) / 4;
-		char returnType = mi.getReturnType().charAt(0);
-		
-		int l = -1;
-		switch(returnType) {
-			case 'D': // Double
-				l = JOPUtil.calculateI(false, methodSizeInWords);
-				if (l <= 11)
-					l = 0;
-				else
-					l -= 11;
-				break;
-			case 'F': // Float
-				l = JOPUtil.calculateI(false, methodSizeInWords);
-				if (l <= 10)
-					l = 0;
-				else
-					l -= 10;
-				break;
-			case 'B': // Byte
-			case 'Z': // Boolean
-			case 'I': // Integer
-			case 'S': // Short
-			case 'C': // Short
-				l = JOPUtil.calculateI(false, methodSizeInWords);
-				if (l <= 10)
-					l = 0;
-				else
-					l -= 10;
-				break;
-			case 'L': // Reference
-			case '[': // array
-				l = JOPUtil.calculateI(false, methodSizeInWords);
-				if (l <= 11)
-					l = 0;
-				else
-					l -= 11;
-				break;
-			case 'J': // Long
-				l = JOPUtil.calculateI(false, methodSizeInWords);
-				if (l <= 10)
-					l = 0;
-				else
-					l -= 10;
-				break;
-			case 'V': // Void
-				l = JOPUtil.calculateI(false, methodSizeInWords);
-				if (l <= 9)
-					l = 0;
-				else
-					l -= 9;
-				break;
-			default:
-				throw new UnknownReturnTypeException("Unknown return type: " + returnType);
-		}
-		return l;		
-	}
-	
-	public static int getWCET(Instruction instruction) throws InstructionNotImplementedException {
+	public int getWCET(Instruction instruction) throws InstructionNotImplementedException {
 		int wcet = 0;
 		int opcode = instruction.getByteCode();
 		
@@ -163,8 +100,7 @@ public class JOPUtil {
 			wcet = 8 + r;
 			break;
 		case (20):
-			//wcet = 17 + 2 * r;
-			wcet = 17 + ((r <= 2) ? 0 : r-2) + ((r <= 1) ? 0 : r-1);
+			wcet = 17 + ((r > 2) ? r - 2 : 0) + ((r > 1) ? r - 1 : 0);
 			break;
 		case (21):
 			wcet = 2;
@@ -344,7 +280,7 @@ public class JOPUtil {
 			wcet = 10 + 2 * r + w;
 			break;
 		case (80):
-			wcet = 48 + 2 * r + w + ((w > 3) ? w-3 : 0);
+			wcet = 48 + 2 * r + w + ((w > 3) ? w-3 : 0); //Not sure if this is the correct execution time. It seems uncertain from JOP Handbook
 			break;
 		case (81):
 			wcet = 10 + 2 * r + w;
@@ -395,8 +331,8 @@ public class JOPUtil {
 			wcet = 1;
 			break;
 		case (97):
-			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
-					+ "]");
+			wcet = 26;
+			break;
 		case (98):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
@@ -407,8 +343,8 @@ public class JOPUtil {
 			wcet = 1;
 			break;
 		case (101):
-			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
-					+ "]");
+			wcet = 38;
+			break;
 		case (102):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
@@ -416,7 +352,7 @@ public class JOPUtil {
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
 		case (104):
-			wcet = 19;
+			wcet = 35;
 			break;
 		case (105):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
@@ -455,8 +391,8 @@ public class JOPUtil {
 			wcet = 4;
 			break;
 		case (117):
-			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
-					+ "]");
+			wcet = 34;
+			break;
 		case (118):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
@@ -467,44 +403,44 @@ public class JOPUtil {
 			wcet = 1;
 			break;
 		case (121):
-			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
-					+ "]");
+			wcet = 28;
+			break;
 		case (122):
 			wcet = 1;
 			break;
 		case (123):
-			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
-					+ "]");
+			wcet = 28;
+			break;
 		case (124):
 			wcet = 1;
 			break;
 		case (125):
-			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
-					+ "]");
+			wcet = 28;
+			break;
 		case (126):
 			wcet = 1;
 			break;
 		case (127):
-			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
-					+ "]");
+			wcet = 8;
+			break;
 		case (128):
 			wcet = 1;
 			break;
 		case (129):
-			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
-					+ "]");
+			wcet = 8;
+			break;
 		case (130):
 			wcet = 1;
 			break;
 		case (131):
-			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
-					+ "]");
+			wcet = 8;
+			break;
 		case (132):
 			wcet = 8;
 			break;
 		case (133):
-			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
-					+ "]");
+			wcet = 5;
+			break;
 		case (134):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
@@ -539,10 +475,8 @@ public class JOPUtil {
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
 		case (145):
-			wcet = 1;
-			break;
-			//throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
-			//		+ "]");
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (146):
 			wcet = 2;
 			break;
@@ -622,28 +556,28 @@ public class JOPUtil {
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
 		case (172):
-			wcet = 23 + ((r <= 3) ? 0 : r-3);
+			wcet = 23 + ((r <= 3) ? 0 : r-3); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (173):
-			wcet = 25 + ((r <= 3) ? 0 : r-3);
+			wcet = 25 + ((r <= 3) ? 0 : r-3); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (174):
-			wcet = 23 + ((r <= 3) ? 0 : r-3);
+			wcet = 23 + ((r <= 3) ? 0 : r-3); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (175):
-			wcet = 25 + ((r <= 3) ? 0 : r-3);
+			wcet = 25 + ((r <= 3) ? 0 : r-3); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (176):
-			wcet = 23 + ((r <= 3) ? 0 : r-3);
+			wcet = 23 + ((r <= 3) ? 0 : r-3); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (177):
-			wcet = 21 + ((r <= 3) ? 0 : r-3);
+			wcet = 21 + ((r <= 3) ? 0 : r-3); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (178):
-			wcet = 12 + 2 * r;
+			wcet = 7 + r;
 			break;
 		case (179):
-			wcet = 13 + r + w;
+			wcet = 8 + w;
 			break;
 		case (180):
 			wcet = 11 + 2 * r;
@@ -652,42 +586,50 @@ public class JOPUtil {
 			wcet = 13 + r + w;
 			break;
 		case (182):
-			wcet = 100 + (2 * r) + ((r <= 3) ? 0 : r-3) + ((r <= 2) ? 0 : r-2);
+			wcet = 100 + (2 * r) + ((r <= 3) ? 0 : r-3) + ((r <= 2) ? 0 : r-2); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (183):
-			wcet = 74 + r + ((r <= 3) ? 0 : r-3) + ((r <= 2) ? 0 : r-2);
+			wcet = 74 + r + ((r <= 3) ? 0 : r-3) + ((r <= 2) ? 0 : r-2); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (184):
-			wcet = 74 + r + ((r <= 3) ? 0 : r-3) + ((r <= 2) ? 0 : r-2);
+			wcet = 74 + r + ((r <= 3) ? 0 : r-3) + ((r <= 2) ? 0 : r-2); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (185):
-			wcet = 114 + (4 * r) + ((r <= 3) ? 0 : r-3) + ((r <= 2) ? 0 : r-2);
+			wcet = 114 + (4 * r) + ((r <= 3) ? 0 : r-3) + ((r <= 2) ? 0 : r-2); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (186):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
 		case (187):
 			wcet=100;
-			System.err.println("wcet not known for [" + instruction.getMnemonic() + "]");
+			System.err.println("wcet not known for [" + instruction.getMnemonic() + "]. Using default: "+ 100 +" cycles");
 			//throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					//+ "]");
 			break;
 		case (188):
-			wcet = 100;
-			System.err.println("wcet not known for [" + instruction.getMnemonic()
-					+ "] Using default: " + wcet);
+			wcet=100;
+			System.err.println("wcet not known for [" + instruction.getMnemonic() + "]. Using default: "+ 100 +" cycles");
+			//throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					//+ "]");
 			break;
 			//throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic() + "]");
 		case (189):
-			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
-					+ "]");
+			wcet=100;
+			System.err.println("wcet not known for [" + instruction.getMnemonic() + "]. Using default: "+ 100 +" cycles");
+			//throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					//+ "]");
+			break;
 		case (190):
 			wcet = 6 + r;
 			break;
 		case (191):
-			System.err.println("wcet not known for [" + instruction.getMnemonic() + "]");
-			//throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic() + "]");
+			wcet=100;
+			System.err.println("wcet not known for [" + instruction.getMnemonic() + "]. Using default: "+ 100 +" cycles");
+			//throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					//+ "]");
 			break;
+			//throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic() + "]");
+			//break;
 		case (192):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
@@ -695,10 +637,10 @@ public class JOPUtil {
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
 		case (194):
-			wcet = 11;
+			wcet = 19;
 			break;
 		case (195):
-			wcet = 14;
+			wcet = 22;
 			break;
 		case (196):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
@@ -770,19 +712,17 @@ public class JOPUtil {
 			wcet = 2;
 			break;
 		case (219):
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 			// n = STACK_SIZE - STACK_OFF which is the max stack size.
-			n = (256 - 64);
-			//n = 85;
-//			wcet = 14 + r + n * (23 + ((w <= 8) ? 0 : w - 8));
-			wcet = 14 + r + n * (23 + ((w <= 8) ? 0 : w - 8));
-			break;
+			//wcet = 14 + r + n * (23 + ((w <= 8) ? 0 : w - 8));
+			//break;
 		case (220):
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 			// n = STACK_SIZE - STACK_OFF which is the max stack size. 
-			n = (256 - 64);
-			//n = 85;
-//			wcet = 14 + r + n * (23 + ((r <= 10) ? 0 : w - 10));
-			wcet = 14 + r + n * (23 + ((r <= 10) ? 0 : w - 10));
-			break;
+			//wcet = 14 + r + n * (23 + ((r <= 10) ? 0 : w - 10));
+			//break;
 		case (221):
 			wcet = 1;
 			break;
@@ -793,14 +733,14 @@ public class JOPUtil {
 			wcet = 5;
 			break;
 		case (224):
-			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
-					+ "]");
+			wcet = 12 + 2 * r;
+			break;
 		case (225):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
 		case (226):
-			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
-					+ "]");
+			wcet = 11 + 2 * r;
+			break;
 		case (227):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
@@ -894,6 +834,4 @@ public class JOPUtil {
 		}
 		return wcet;
 	}
-	
-	
 }

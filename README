@@ -46,7 +46,7 @@ symbolic.realtime.generatequeries 	= 	[true|false]				(default: true)
 Use this option to automatically generate the UPPAAL queries for conducting the analyses as reachability problems.
 
 symbolic.realtime.progressmeasure	= 	[true|false]				(default: true)
-Generate UPPAAL progress measure to spped up verification and reduce memory requirements
+Generate UPPAAL progress measure to speed up verification and reduce memory requirements
 
 Contact:
 -------

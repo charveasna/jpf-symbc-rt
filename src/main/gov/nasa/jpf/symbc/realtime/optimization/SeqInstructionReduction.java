@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import gov.nasa.jpf.symbc.realtime.ICacheAffectedNode;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasBCET;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasWCET;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IStateReducible;
@@ -29,10 +30,12 @@ public class SeqInstructionReduction implements IRTOptimization,
 	private SymbolicExecutionTree tree;
 
 	private final boolean targetSymRT;
+	private final boolean reduceCacheAffectedNodes;
 
-	public SeqInstructionReduction(boolean targetSymRT) {
+	public SeqInstructionReduction(boolean targetSymRT, boolean reduceCacheAffectedNodes) {
 		this.targetSymRT = targetSymRT;
 		this.sequentialInstrNodes = new SeqInstrNodesList();
+		this.reduceCacheAffectedNodes = reduceCacheAffectedNodes;
 	}
 
 	@Override
@@ -55,7 +58,8 @@ public class SeqInstructionReduction implements IRTOptimization,
 			this.sequentialInstrNodes.addLast(node);
 			if (node.getOutgoingTransitions().size() > 1
 					|| node.getOutgoingTransitions().isEmpty()
-					|| (!this.isNodeReducible(node) && this.targetSymRT)) {
+					|| (!this.isNodeReducible(node) && this.targetSymRT)
+					|| (!this.reduceCacheAffectedNodes && node instanceof ICacheAffectedNode)) {
 				collapseNodes(this.sequentialInstrNodes);
 				this.sequentialInstrNodes.clear();
 			}

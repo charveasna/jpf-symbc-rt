@@ -11,7 +11,6 @@ import java.util.LinkedList;
 import uppaal.NTA;
 import gov.nasa.jpf.Config;
 import gov.nasa.jpf.JPF;
-import gov.nasa.jpf.PropertyListenerAdapter;
 import gov.nasa.jpf.jvm.bytecode.FieldInstruction;
 import gov.nasa.jpf.jvm.bytecode.GETFIELD;
 import gov.nasa.jpf.jvm.bytecode.GETSTATIC;
@@ -19,23 +18,27 @@ import gov.nasa.jpf.jvm.bytecode.PUTFIELD;
 import gov.nasa.jpf.jvm.bytecode.PUTSTATIC;
 import gov.nasa.jpf.search.Search;
 import gov.nasa.jpf.symbc.numeric.Expression;
-import gov.nasa.jpf.symbc.numeric.PathCondition;
 import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
 import gov.nasa.jpf.symbc.realtime.loopbounds.LoopBound;
 import gov.nasa.jpf.symbc.realtime.loopbounds.LoopBoundExtractor;
+import gov.nasa.jpf.symbc.realtime.ntaanalysis.INTAAnalysis;
 import gov.nasa.jpf.symbc.realtime.optimization.RTOptimizer;
 import gov.nasa.jpf.symbc.realtime.optimization.SeqInstructionReduction;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.CACHE_POLICY;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPFifoVarBlockCacheSimUppaalTranslator;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPUppaalTranslator;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOP_CACHE;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPNodeFactory;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPTiming;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.platformagnostic.PlatformAgnosticTimingNodeFactory;
-import gov.nasa.jpf.symbc.realtime.rtsymexectree.platformagnostic.PlatformAgnosticTimingStdNode;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.platformagnostic.PlatformAgnosticUppaalTranslator;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.timingdoc.TDUppaalTranslator;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.timingdoc.TimingDocNodeFactory;
+import gov.nasa.jpf.symbc.realtime.util.EnteredMethodsSet;
 import gov.nasa.jpf.symbc.symexectree.ASymbolicExecutionTreeListener;
-import gov.nasa.jpf.symbc.symexectree.InstrContext;
 import gov.nasa.jpf.symbc.symexectree.NodeFactory;
 import gov.nasa.jpf.symbc.symexectree.SymExecTreeUtils;
 import gov.nasa.jpf.symbc.symexectree.structure.SymbolicExecutionTree;
-import gov.nasa.jpf.util.ObjectList;
-import gov.nasa.jpf.util.Source;
 import gov.nasa.jpf.vm.ClassInfo;
 import gov.nasa.jpf.vm.ElementInfo;
 import gov.nasa.jpf.vm.FieldInfo;
@@ -64,13 +67,14 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 	 * If the target platform is 'timingdoc', a Timing Doc - describing the execution
 	 * times of the individual Java Bytecodes of the particular platform - must be
 	 * supplied as well using:
-	 * symbolic.realtime.timingdocpath 			= 	<source path>
+	 * symbolic.realtime.timingdoc.path 			= 	<source path>
 	 * 
 	 * ------JOP-specific settings---------------------------------------------------------
 	 * symbolic.realtime.jop.cachepolicy		=	[miss|hit|simulate]			(default: miss)
-	 * symbolic.realtime.jop.readcycles			=	[:number:]					(default: 6 (applies for Cyclone EP1C6))
-	 * symbolic.realtime.jop.writecycles		=	[:number:]					(default: 6 (applies for Cyclone EP1C6))
-	 * symbolic.realtime.jop.memoryaccesscycles	=	[:number:]					(default: 3 (applies for Cyclone EP1C6))
+	 * symbolic.realtime.jop.cachetype			=	[fifovarblock]				(default: fifovarblock (Applies only for "simulate" cache policy. Currently only support for fifo))
+	 * symbolic.realtime.jop.cachetype.fifo.blocks=	[:number:]					(default: 16)
+	 * symbolic.realtime.jop.cachetype.fifo.size=	[:number:]					(default: 1024)
+	 * symbolic.realtime.jop.ram_cnt			=	[:number:]					(default: 2 (applies for Cyclone EP1C6@100Mhz and 15ns SRAM))
 	 * 
 	 */
 	
@@ -82,8 +86,11 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 	private final boolean generateQueries;
 	private final boolean useProgressMeasure;
 	private int injectedSymbID;
+	private EnteredMethodsSet enteredMethods; //only used for FIFO cache simulation in JOP
 	
 	private HashSet<ElementInfo> visitedEi = new HashSet<ElementInfo>();
+	
+	private LinkedList<INTAAnalysis> ntaAnalyses;
 
 	public UppaalTranslationListener(Config conf, JPF jpf) {
 		super(conf, jpf);
@@ -95,6 +102,8 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 		if(this.useProgressMeasure && this.targetSymRT)
 			throw new RealTimeRuntimeException("Progress measures are currently not supported in SymRT");
 		this.injectedSymbID = 0;
+		this.ntaAnalyses = new LinkedList<>();
+		this.enteredMethods = new EnteredMethodsSet();
 	}
 
 	@Override
@@ -108,7 +117,6 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 			}
 		}
 	}
-	
 	
 	@Override
 	public void executeInstruction(VM vm, ThreadInfo currentThread, Instruction instructionToExecute) {
@@ -160,8 +168,6 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 		recursivelySetSharedness(ei, ti);
 	}
 	
-
-	
 	private void recursivelySetSharedness(ElementInfo ei, ThreadInfo ti) {
 		if(visitedEi.contains(ei))
 			return;
@@ -182,7 +188,7 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 			}
 		}
 	}
-
+	
 	@Override
 	public void searchConstraintHit(Search search) {
 		if (!search.isEndState() && !search.isErrorState()) {
@@ -220,40 +226,82 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 	protected NodeFactory getNodeFactory() {
 		this.targetPlatform = super.jpfConf.getString("symbolic.realtime.platform", "").toLowerCase();
 		switch(this.targetPlatform) {
-			case "jop":
-				return new JOPNodeFactory();
 			case "agnostic":
 				return new PlatformAgnosticTimingNodeFactory();
 			case "timingdoc":
-				String timingDocPath = super.jpfConf.getString("symbolic.realtime.timingdocpath");
+				String timingDocPath = super.jpfConf.getString("symbolic.realtime.timingdoc.path");
 				if(timingDocPath == null) 
 					throw new TimingDocException("symbolic.realtime.timingdocpath has not been set.");
 				TimingDoc tDoc = TimingDocGenerator.generate(timingDocPath);
 				return new TimingDocNodeFactory(tDoc);
+			case "jop":
 			default:
-				System.out.println("Default platform JOP is used");
-				return new JOPNodeFactory();
+				CACHE_POLICY cachePol = CACHE_POLICY.valueOf(super.jpfConf.getString("symbolic.realtime.jop.cachepolicy", "miss").toUpperCase());
+				int ram_cnt = super.jpfConf.getInt("symbolic.realtime.jop.ram_cnt", 2);
+				return new JOPNodeFactory(cachePol, new JOPTiming(ram_cnt));
 		}
 	}
 
 	@Override
+	public void methodEntered (VM vm, ThreadInfo currentThread, MethodInfo enteredMethod) {
+		if (!vm.getSystemState().isIgnored()) {
+			if(SymExecTreeUtils.isInSymbolicCallChain(enteredMethod, currentThread.getTopFrame(), this.jpfConf)) {
+				this.enteredMethods.add(enteredMethod);
+			}
+		}
+	}
+	
+	@Override
 	protected void processSymbExecTree(LinkedList<SymbolicExecutionTree> trees) {
 		if(trees.isEmpty())
-			throw new UppaalTranslatorException("No symbolic execution trees were generated! Have you set the target method correctly?");
-		UppaalTranslator translator = new UppaalTranslator(this.targetSymRT, this.useProgressMeasure);
+			throw new UppaalTranslatorException("No symbolic execution trees were generated! Have you set the target method correctly?");		
+		boolean reduceCacheAffectedNodes = true;
+		AUppaalTranslator translator = null;
+		switch(this.targetPlatform) {
+			case "agnostic":
+				translator = new PlatformAgnosticUppaalTranslator(this.targetSymRT, this.useProgressMeasure);
+				break;
+			case "timingdoc":
+				translator = new TDUppaalTranslator(this.targetSymRT, this.useProgressMeasure);
+				break;
+			case "jop":
+			default:
+				CACHE_POLICY cachePol = CACHE_POLICY.valueOf(super.jpfConf.getString("symbolic.realtime.jop.cachepolicy", "miss").toUpperCase());
+				if(cachePol == CACHE_POLICY.SIMULATE) {
+					reduceCacheAffectedNodes = false;
+					JOP_CACHE cache = JOP_CACHE.valueOf(super.jpfConf.getString("symbolic.realtime.jop.cachetype", "fifovarblock").toUpperCase());
+					switch(cache) {
+						case FIFOVARBLOCK:
+						default:
+							int cacheBlocks = super.jpfConf.getInt("symbolic.realtime.jop.cachetype.fifo.blocks", 16);
+							int cacheSize = super.jpfConf.getInt("symbolic.realtime.jop.cachetype.fifo.size", 1024);
+							translator = new JOPFifoVarBlockCacheSimUppaalTranslator(this.targetSymRT, this.useProgressMeasure, this.enteredMethods, cacheBlocks, cacheSize);
+					}
+				} else {
+					translator = new JOPUppaalTranslator(this.targetSymRT, this.useProgressMeasure);
+				}
+		}
+		
 		RTOptimizer optimizer = null;
 		if(this.optimize) {
 			optimizer = new RTOptimizer();
-			optimizer.addOptimization(new SeqInstructionReduction(this.targetSymRT));
+			optimizer.addOptimization(new SeqInstructionReduction(this.targetSymRT, reduceCacheAffectedNodes));
 		}
 		for(SymbolicExecutionTree tree : trees) {
 			if(this.optimize)
 				optimizer.optimize(tree);
 			NTA ntaSystem = translator.translateSymTree(tree);
+			for(INTAAnalysis ntaAnalysis : this.ntaAnalyses) {
+				ntaAnalysis.conductAnalysis(ntaSystem);
+			}
 			ntaSystem.writePrettyLayoutModelToFile(this.getNTAFileName(ntaSystem, tree));
 			if(this.generateQueries)
 				QueriesFileGenerator.writeQueriesFile(ntaSystem, getQueriesFileName(ntaSystem, tree));
-			System.out.println("Wrote model of target method " + tree.getTargetMethod().getShortMethodName() + " to " + new File(outputBasePath).getAbsolutePath());
+			try {
+				System.out.println("Wrote model of target method " + tree.getTargetMethod().getShortMethodName() + " to " + new File(outputBasePath).getCanonicalPath());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	

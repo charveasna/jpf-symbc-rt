@@ -5,7 +5,6 @@ package gov.nasa.jpf.symbc.realtime.rtsymexectree.jop;
 
 import gov.nasa.jpf.jvm.bytecode.MONITORENTER;
 import gov.nasa.jpf.jvm.bytecode.ReturnInstruction;
-import gov.nasa.jpf.symbc.realtime.JOPUtil;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.RTInvokeNode;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.RTMonitorEnterNode;
 import gov.nasa.jpf.symbc.symexectree.InstrContext;
@@ -19,14 +18,14 @@ import gov.nasa.jpf.vm.Instruction;
 public class JOPMonitorEnterNode extends RTMonitorEnterNode implements IJOPRealTimeNode {
 	private int wcet;
 	
-	public JOPMonitorEnterNode(InstrContext instructionContext) {
-		this(instructionContext, null);
+	public JOPMonitorEnterNode(InstrContext instructionContext, JOPTiming jopTiming) {
+		this(instructionContext, jopTiming, null);
 	}
-	
-	public JOPMonitorEnterNode(InstrContext instructionContext, SymbolicExecutionTree tree) {
+
+	public JOPMonitorEnterNode(InstrContext instructionContext, JOPTiming jopTiming, SymbolicExecutionTree tree) {
 		super(instructionContext, tree);
 		Instruction instr = instructionContext.getInstr();
-		this.wcet = JOPUtil.getWCET(instr);
+		this.wcet = jopTiming.getWCET(instr);
 	}
 
 	@Override

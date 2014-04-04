@@ -4,7 +4,7 @@
 package gov.nasa.jpf.symbc.realtime.rtsymexectree;
 
 import gov.nasa.jpf.jvm.bytecode.InvokeInstruction;
-import gov.nasa.jpf.symbc.realtime.JOPUtil;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPTiming;
 import gov.nasa.jpf.symbc.symexectree.InstrContext;
 import gov.nasa.jpf.symbc.symexectree.structure.SymbolicExecutionTree;
 import gov.nasa.jpf.vm.Instruction;

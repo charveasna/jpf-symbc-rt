@@ -44,32 +44,32 @@ import uppaal.labels.Synchronization.SyncType;
  * @author Kasper S. Luckow <luckow@cs.aau.dk>
  *
  */
-public class UppaalTranslator {
+public abstract class AUppaalTranslator {
 	private HashMap<Node, Location> visitedTreeNodesMap;
-	private boolean targetSymRT;
 	private boolean generateProgressMeasure;
-	private static final String PM_VAR_N = "pm";
-	private static final String JBC_CLOCL_N = "jbcExecTime";
-	
+	protected boolean targetSymRT;
+	protected static final String PM_VAR_N = "pm";
+	protected static final String JBC_CLOCK_N = "jbcExecTime";
+	protected NTA nta;
 	private int uniqueID;
 	
 	private Location finalLoc;
 	
-	public UppaalTranslator(boolean targetSymRT, boolean useProgressMeasure) {
+	public AUppaalTranslator(boolean targetSymRT, boolean useProgressMeasure) {
 		this.targetSymRT = targetSymRT;
 		this.generateProgressMeasure = useProgressMeasure;
 		this.uniqueID = 0;
+		this.nta = new NTA();
 	}
 	
 	public NTA translateSymTree(SymbolicExecutionTree tree) {
 		this.visitedTreeNodesMap = new HashMap<Node, Location>(); 
-		
 		Automaton ta = new Automaton(getTemplateName(tree.getTargetMethod()));
 		Location initLoc = new Location(ta, "initLoc");
 		ta.setInit(initLoc);
 		this.finalLoc = new Location(ta, "final");
 		this.finalLoc.setType(LocationType.COMMITTED);
-		ta.getDeclaration().add("clock " + JBC_CLOCL_N + ";");
+		ta.getDeclaration().add("clock " + JBC_CLOCK_N + ";");
 
 		Location taRoot = recursivelyTraverseSymTree(tree.getRootNode(), ta);
 		uppaal.Transition initTrans = new uppaal.Transition(ta, initLoc, taRoot);
@@ -81,8 +81,7 @@ public class UppaalTranslator {
 		} else {
 			initLoc.setType(LocationType.COMMITTED);
 		}
-		
-		NTA nta = new NTA();
+
 		if(!this.targetSymRT) {
 			nta.getSystemDeclaration().addSystemInstance(ta.getName().getName());
 			nta.getDeclarations().add("clock executionTime;");
@@ -129,13 +128,13 @@ public class UppaalTranslator {
 		visitedTreeNodesMap.put(treeNode, targetLoc);
 		
 		//A leaf has been hit, so we add a transition to the final location
-		if(outTransitions.isEmpty()) { 
-			uppaal.Transition uppFinalTrans = new uppaal.Transition(ta, targetLoc, this.finalLoc);
-			patchTransition(uppFinalTrans, treeNode);
+		if(outTransitions.isEmpty()) {
+			Location newSrc = createTransition(ta, treeNode, targetLoc, this.finalLoc);
+			targetLoc = newSrc;
 		} else {
 			for(Transition t : outTransitions) {
-				uppaal.Transition uppTrans = new uppaal.Transition(ta, targetLoc, recursivelyTraverseSymTree(t.getDstNode(), ta));
-				this.patchTransition(uppTrans, treeNode);
+				Location newSrc = createTransition(ta, treeNode, targetLoc, recursivelyTraverseSymTree(t.getDstNode(), ta));
+				targetLoc = newSrc;
 			}
 		}
 		return targetLoc;
@@ -158,36 +157,9 @@ public class UppaalTranslator {
 		return false;
 	}
 	
-	private boolean isInCallChain(InstrContext instrCtx, String packageName, String className) {
-		StackFrame frame = instrCtx.getFrame();
-		while(frame != null) {
-			ClassInfo cInfo = frame.getMethodInfo().getClassInfo();
-			if(cInfo.getPackageName().equals(packageName) &&
-			   cInfo.getSimpleName().equals(className))
-				return true;
-			frame = frame.getPrevious();
-		}
-		return false;
-	}
-	
-	private void patchTransition(uppaal.Transition uppTrans, Node treeNode) {
-		if(!(treeNode instanceof IHasBCET) &&
-		   !(treeNode instanceof IHasWCET)) {
-			if(this.targetSymRT)
-				uppTrans.setGuard("running[tID] == true");
-			uppTrans.setSync(new Synchronization("jvm_execute", SyncType.INITIATOR));
-			uppTrans.addUpdate("jvm_instruction = JVM_" + treeNode.getInstructionContext().getInstr().getMnemonic().toUpperCase());
-		} else if((treeNode instanceof IHasBCET) &&
-				  (treeNode instanceof IHasWCET)) {
-			uppTrans.setGuard(JBC_CLOCL_N + " >= " + ((IHasBCET) treeNode).getBCET() + " &&\n" +
-					JBC_CLOCL_N + " <= " + ((IHasWCET) treeNode).getWCET());
-			uppTrans.addUpdate(JBC_CLOCL_N + " = 0");
-		}
-		else if(treeNode instanceof IHasWCET) {
-			uppTrans.setGuard(JBC_CLOCL_N + " == " + ((IHasWCET) treeNode).getWCET());
-			uppTrans.addUpdate(JBC_CLOCL_N + " = 0");
-		}
-		
+	private Location createTransition(Automaton ta, Node treeNode, Location src, Location target) {
+		uppaal.Transition uppTrans = new uppaal.Transition(ta, src, target);
+		Location newSrc = this.decoratePlatformDependentTransition(ta, uppTrans, treeNode);
 		if(this.targetSymRT &&
 		   treeNode instanceof MonitorEnterNode)
 			uppTrans.addUpdate("monitorEnter()");
@@ -210,31 +182,28 @@ public class UppaalTranslator {
 		
 		if(treeNode.getOutgoingTransitions().size() > 1 && this.generateProgressMeasure) {
 			uppTrans.addUpdate(PM_VAR_N + "++");
-		}		
+		}
+		return newSrc;
 	}
 	
-	private Location translateTreeNode(Node treeNode, Automaton ta) {
-		Instruction instr = treeNode.getInstructionContext().getInstr();
-		Location newLoc = new Location(ta, instr.getMnemonic() + "_" + this.getUniqueIDString());
-		boolean isStaticET = false;
-		StringBuilder invariantBuilder = new StringBuilder();
-		if(treeNode instanceof IHasWCET) {
-			invariantBuilder.append(JBC_CLOCL_N + " <= ")
-							.append(((IHasWCET) treeNode).getWCET());
-			isStaticET = true;
+	private boolean isInCallChain(InstrContext instrCtx, String packageName, String className) {
+		StackFrame frame = instrCtx.getFrame();
+		while(frame != null) {
+			ClassInfo cInfo = frame.getMethodInfo().getClassInfo();
+			if(cInfo.getPackageName().equals(packageName) &&
+			   cInfo.getSimpleName().equals(className))
+				return true;
+			frame = frame.getPrevious();
 		}
-		/*if(treeNode instanceof IHasBCET) {
-			invariantBuilder.append("&&\n")
-							.append("executionTime >= ")
-							.append(((IHasBCET) treeNode).getBCET());
-			isStaticET = true;
-		}*/
-		if(targetSymRT && isStaticET) {
-			invariantBuilder.append("&&\n")
-							.append(JBC_CLOCL_N + "' == running[tID]");
-		}
-		newLoc.setInvariant(invariantBuilder.toString());
-		newLoc.setComment(instr.getFilePos());
-		return newLoc;
+		return false;
 	}
+	
+	protected abstract Location decoratePlatformDependentTransition(Automaton ta, uppaal.Transition uppTrans, Node treeNode);
+	
+	protected String getLocationName(Node treeNode) {
+		Instruction instr = treeNode.getInstructionContext().getInstr();
+		return instr.getMnemonic() + "_" + this.getUniqueIDString();
+	}
+	
+	protected abstract Location translateTreeNode(Node treeNode, Automaton ta);
 }

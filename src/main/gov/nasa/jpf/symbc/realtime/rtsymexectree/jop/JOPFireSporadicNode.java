@@ -3,9 +3,17 @@
  */
 package gov.nasa.jpf.symbc.realtime.rtsymexectree.jop;
 
+import gov.nasa.jpf.jvm.bytecode.ARETURN;
+import gov.nasa.jpf.jvm.bytecode.DRETURN;
+import gov.nasa.jpf.jvm.bytecode.FRETURN;
+import gov.nasa.jpf.jvm.bytecode.IRETURN;
 import gov.nasa.jpf.jvm.bytecode.InvokeInstruction;
+import gov.nasa.jpf.jvm.bytecode.LRETURN;
 import gov.nasa.jpf.jvm.bytecode.ReturnInstruction;
-import gov.nasa.jpf.symbc.realtime.JOPUtil;
+import gov.nasa.jpf.symbc.bytecode.INVOKESPECIAL;
+import gov.nasa.jpf.symbc.bytecode.INVOKESTATIC;
+import gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL;
+import gov.nasa.jpf.symbc.realtime.ICacheAffectedNode;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IRealTimeNode;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IStateReducible;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.RTFireSporadicNode;
@@ -18,24 +26,23 @@ import gov.nasa.jpf.vm.Instruction;
  * @author Kasper S. Luckow <luckow@cs.aau.dk>
  *
  */
-public class JOPFireSporadicNode extends RTFireSporadicNode implements IJOPRealTimeNode {
+public class JOPFireSporadicNode extends RTFireSporadicNode implements ICacheAffectedNode {
 	private int wcet;
+	private InvokeInstruction instr;
+	private JOPTiming jopTiming;
 	
-	public JOPFireSporadicNode(InstrContext instructionContext) {
-		this(instructionContext, null);
+	public JOPFireSporadicNode(InstrContext instructionContext, JOPTiming jopTiming, CACHE_POLICY cachePol) {
+		this(instructionContext, jopTiming, cachePol, null);
 	}
 	
-	public JOPFireSporadicNode(InstrContext instructionContext, SymbolicExecutionTree tree) {
+	public JOPFireSporadicNode(InstrContext instructionContext, JOPTiming jopTiming, CACHE_POLICY cachePol, SymbolicExecutionTree tree) {
 		super(instructionContext, tree);
-		Instruction instr = instructionContext.getInstr();
-		this.wcet = JOPUtil.getWCET(instr);
-		
-		/*Add the method switch cost if the instruction is a return instruction
-		* Note that we assume 'worst-case behavior' in terms of the cache - a
-		* cache miss is assumed to always occur
-		*/
-		if(instr instanceof InvokeInstruction)
-			this.wcet += JOPUtil.calculateMethodSwitchCost(false, ((InvokeInstruction)instr).getMethodInfo());
+		this.jopTiming = jopTiming;
+		Instruction i = instructionContext.getInstr();
+		if(i instanceof InvokeInstruction) { //Not really necessary...
+			this.instr = (InvokeInstruction)i;
+			this.wcet = getCacheAffectedWCET(cachePol == CACHE_POLICY.HIT || cachePol == CACHE_POLICY.SIMULATE);
+		}
 	}
 
 	@Override
@@ -51,5 +58,12 @@ public class JOPFireSporadicNode extends RTFireSporadicNode implements IJOPRealT
 	@Override
 	public boolean isReducible() {
 		return false;
+	}
+
+	@Override
+	public int getCacheAffectedWCET(boolean cacheHit) {
+		int instrWCET = this.jopTiming.getWCET(instr);
+		int cacheLoadCost = jopTiming.calculateCacheLoadTime(this.instr.getMethodInfo(), cacheHit);
+		return instrWCET + ((cacheLoadCost > 37) ? cacheLoadCost - 37 : 0); //From JOP Handbook
 	}
 }
