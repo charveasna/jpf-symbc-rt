@@ -1,5 +1,6 @@
 syntax: glob
 build      # maven output
+**.class
 \.classpath # eclipse
 *SPF.q #
 *SPF.xml #

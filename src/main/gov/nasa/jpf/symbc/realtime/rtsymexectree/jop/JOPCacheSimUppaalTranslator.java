@@ -3,25 +3,17 @@
  */
 package gov.nasa.jpf.symbc.realtime.rtsymexectree.jop;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
 import gov.nasa.jpf.jvm.bytecode.InvokeInstruction;
 import gov.nasa.jpf.jvm.bytecode.ReturnInstruction;
 import gov.nasa.jpf.symbc.realtime.ICacheAffectedNode;
 import gov.nasa.jpf.symbc.realtime.UppaalTranslatorException;
-import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasWCET;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.AJOPCacheBuilder;
 import gov.nasa.jpf.symbc.realtime.util.EnteredMethodsSet;
 import gov.nasa.jpf.symbc.symexectree.structure.Node;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MethodInfo;
-import gov.nasa.jpf.vm.StackFrame;
 import uppaal.Automaton;
 import uppaal.Location;
-import uppaal.NTA;
 import uppaal.Transition;
 import uppaal.Location.LocationType;
 
@@ -29,84 +21,21 @@ import uppaal.Location.LocationType;
  * @author Kasper S. Luckow <luckow@cs.aau.dk>
  *
  */
-public class JOPFifoVarBlockCacheSimUppaalTranslator extends JOPUppaalTranslator {
+public class JOPCacheSimUppaalTranslator extends JOPUppaalTranslator {
 	
-	private int cacheBlocks;
-	private int totalCacheSize;
-	private int cacheBlockSize;
 	private EnteredMethodsSet enteredMethods;
 	private int cacheLocationId;
+	private AJOPCacheBuilder jopCache;
 	
-	public JOPFifoVarBlockCacheSimUppaalTranslator(boolean targetSymRT,
-			boolean useProgressMeasure, EnteredMethodsSet enteredMethods, int cacheBlocks, int totalCacheSize) {
+	public JOPCacheSimUppaalTranslator(boolean targetSymRT,
+			boolean useProgressMeasure, EnteredMethodsSet enteredMethods, AJOPCacheBuilder cache) {
 		super(targetSymRT, useProgressMeasure);
-		this.cacheBlocks = cacheBlocks;
-		this.totalCacheSize = totalCacheSize;
-		this.cacheBlockSize = totalCacheSize / cacheBlocks;
 		this.enteredMethods = enteredMethods;
 		this.cacheLocationId = 0;
-		generateFIFOCache(super.nta, enteredMethods);
-	}
-	
-	private void generateFIFOCache(NTA nta, EnteredMethodsSet enteredMethods) {
-		StringBuilder cacheBuilder = new StringBuilder();
-		int numMethods = enteredMethods.getEnteredMethods().size();
-		cacheBuilder.append("const int num_methods = " + numMethods + ";\n");
-		cacheBuilder.append("const int NUM_BLOCKS[num_methods] = { ");
+		this.jopCache = cache;
 		
-		List<Integer> sortedIds = asSortedList(enteredMethods.getIds().keySet());
-		Iterator<Integer> idIter = sortedIds.iterator();
-		while(idIter.hasNext()) {
-			int currId = idIter.next();
-			int methodBlocks = numberOfBlocksForMethod(enteredMethods.getMethod(currId));
-			cacheBuilder.append(methodBlocks);
-			if(idIter.hasNext()) {
-				cacheBuilder.append(", ");
-			}
-		}
-		cacheBuilder.append(" };\n");
-		//NOTE, we here assume that the first method is ->NOT<- in the cache (because 0 is not present at index 0);
-		cacheBuilder.append("int[0, num_methods] cache[").append(this.cacheBlocks).append("] = { ");
-		for(int i = 0; i < this.cacheBlocks; i++) {
-			cacheBuilder.append("num_methods");
-			if(i < this.cacheBlocks - 1) {
-				cacheBuilder.append(", ");
-			}
-		}
-		cacheBuilder.append(" };\n");
-		cacheBuilder.append("bool cacheHit;\n");
-		cacheBuilder.append("void access_cache(int mid) {\n")
-					.append("\tint i = 0;\n")
-					.append("\tint sz = NUM_BLOCKS[mid];\n")
-					.append("\tcacheHit = false;\n")
-					.append("\tfor(i = 0; i < ").append(cacheBlocks).append("; i++) {\n")
-					.append("\t\tif(cache[i] == mid) {\n")
-					.append("\t\t\tcacheHit = true;\n")
-					.append("\t\t\treturn;\n")
-					.append("\t\t}\n")
-					.append("\t}\n")
-					.append("\tfor(i = ").append(cacheBlocks - 1).append("; i >= sz; i--) {\n")
-					.append("\t\tcache[i]=cache[i-sz];\n")
-					.append("\t}\n")
-					.append("\tfor(i = 0; i < sz-1; i++) {\n")
-					.append("\t\tcache[i] = num_methods;\n")
-					.append("\t}\n")
-					.append("\tcache[i] = mid;\n")
-					.append("}\n");
-		
-		nta.getDeclarations().add(cacheBuilder.toString());
-	}
-	
-	//TODO: Review this...
-	private int numberOfBlocksForMethod(MethodInfo method) {
-		int methodWordSize = (method.getNumberOfInstructions() + 3) / 4;
-		return methodWordSize / this.cacheBlockSize;
-	}
-	
-	private <T extends Comparable<? super T>> List<T> asSortedList(Collection<T> c) {
-	  List<T> list = new ArrayList<T>(c);
-	  java.util.Collections.sort(list);
-	  return list;
+		String jopCacheDecl = jopCache.generateCacheTemplate();
+		super.nta.getDeclarations().add(jopCacheDecl);
 	}
 	
 	@Override
@@ -136,9 +65,10 @@ public class JOPFifoVarBlockCacheSimUppaalTranslator extends JOPUppaalTranslator
 			 * if(returnFrame != null)
 			 *		cacheAffectedMethod = returnFrame.getMethodInfo();
 			 */
-			Instruction nextInstr = instr.getNext(); //We obtain the first instruction of the caller
-			if(nextInstr != null) {
-				cacheAffectedMethod = nextInstr.getMethodInfo();
+			if(treeNode.getOutgoingTransitions().size() > 0) {
+				Node nxtNode = treeNode.getOutgoingTransitions().get(0).getDstNode();
+				Instruction nxtInstr = nxtNode.getInstructionContext().getInstr();
+				cacheAffectedMethod = nxtInstr.getMethodInfo();
 			} else {
 				return targetLoc; //If the frame is null, it means we are returning from main, so it will not have a cache effect...
 			}			
@@ -166,6 +96,7 @@ public class JOPFifoVarBlockCacheSimUppaalTranslator extends JOPUppaalTranslator
 		
 		Transition cacheMissDoneTrans = new Transition(ta, cacheMissLoc, targetLoc);
 		cacheMissDoneTrans.setGuard(JBC_CLOCK_N + " == " + cacheMissCost);
+		cacheMissDoneTrans.addUpdate(JBC_CLOCK_N + " = 0");
 		
 		return accessCacheLoc;
 	}

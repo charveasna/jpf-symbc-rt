@@ -25,11 +25,13 @@ import gov.nasa.jpf.symbc.realtime.ntaanalysis.INTAAnalysis;
 import gov.nasa.jpf.symbc.realtime.optimization.RTOptimizer;
 import gov.nasa.jpf.symbc.realtime.optimization.SeqInstructionReduction;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.CACHE_POLICY;
-import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPFifoVarBlockCacheSimUppaalTranslator;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPCacheSimUppaalTranslator;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPUppaalTranslator;
-import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOP_CACHE;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPNodeFactory;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPTiming;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.AJOPCacheBuilder;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.FIFOVarBlockCache;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.JOP_CACHE;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.platformagnostic.PlatformAgnosticTimingNodeFactory;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.platformagnostic.PlatformAgnosticUppaalTranslator;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.timingdoc.TDUppaalTranslator;
@@ -268,6 +270,7 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 			default:
 				CACHE_POLICY cachePol = CACHE_POLICY.valueOf(super.jpfConf.getString("symbolic.realtime.jop.cachepolicy", "miss").toUpperCase());
 				if(cachePol == CACHE_POLICY.SIMULATE) {
+					AJOPCacheBuilder cacheBuilder;
 					reduceCacheAffectedNodes = false;
 					JOP_CACHE cache = JOP_CACHE.valueOf(super.jpfConf.getString("symbolic.realtime.jop.cachetype", "fifovarblock").toUpperCase());
 					switch(cache) {
@@ -275,8 +278,9 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 						default:
 							int cacheBlocks = super.jpfConf.getInt("symbolic.realtime.jop.cachetype.fifo.blocks", 16);
 							int cacheSize = super.jpfConf.getInt("symbolic.realtime.jop.cachetype.fifo.size", 1024);
-							translator = new JOPFifoVarBlockCacheSimUppaalTranslator(this.targetSymRT, this.useProgressMeasure, this.enteredMethods, cacheBlocks, cacheSize);
+							cacheBuilder = new FIFOVarBlockCache(this.enteredMethods, cacheBlocks, cacheSize);
 					}
+					translator = new JOPCacheSimUppaalTranslator(this.targetSymRT, this.useProgressMeasure, this.enteredMethods, cacheBuilder);
 				} else {
 					translator = new JOPUppaalTranslator(this.targetSymRT, this.useProgressMeasure);
 				}
