@@ -34,7 +34,7 @@ public class JOPCacheSimUppaalTranslator extends JOPUppaalTranslator {
 		this.cacheLocationId = 0;
 		this.jopCache = cache;
 		
-		String jopCacheDecl = jopCache.generateCacheTemplate();
+		String jopCacheDecl = jopCache.buildCache();
 		super.nta.getDeclarations().add(jopCacheDecl);
 	}
 	

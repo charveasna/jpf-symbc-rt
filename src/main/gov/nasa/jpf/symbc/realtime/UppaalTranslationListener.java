@@ -30,8 +30,10 @@ import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPUppaalTranslator;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPNodeFactory;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPTiming;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.AJOPCacheBuilder;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.FIFOCache;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.FIFOVarBlockCache;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.JOP_CACHE;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.LRUCache;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.platformagnostic.PlatformAgnosticTimingNodeFactory;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.platformagnostic.PlatformAgnosticUppaalTranslator;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.timingdoc.TDUppaalTranslator;
@@ -73,7 +75,7 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 	 * 
 	 * ------JOP-specific settings---------------------------------------------------------
 	 * symbolic.realtime.jop.cachepolicy		=	[miss|hit|simulate]			(default: miss)
-	 * symbolic.realtime.jop.cachetype			=	[fifovarblock]				(default: fifovarblock (Applies only for "simulate" cache policy. Currently only support for fifo))
+	 * symbolic.realtime.jop.cachetype			=	[fifovarblock|fifo|lru]		(default: fifovarblock (Applies only for "simulate" cache policy. Currently only support for fifo))
 	 * symbolic.realtime.jop.cachetype.fifo.blocks=	[:number:]					(default: 16)
 	 * symbolic.realtime.jop.cachetype.fifo.size=	[:number:]					(default: 1024)
 	 * symbolic.realtime.jop.ram_cnt			=	[:number:]					(default: 2 (applies for Cyclone EP1C6@100Mhz and 15ns SRAM))
@@ -273,11 +275,17 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 					AJOPCacheBuilder cacheBuilder;
 					reduceCacheAffectedNodes = false;
 					JOP_CACHE cache = JOP_CACHE.valueOf(super.jpfConf.getString("symbolic.realtime.jop.cachetype", "fifovarblock").toUpperCase());
+					int cacheBlocks = super.jpfConf.getInt("symbolic.realtime.jop.cachetype.fifo.blocks", 16);
+					int cacheSize = super.jpfConf.getInt("symbolic.realtime.jop.cachetype.fifo.size", 1024);
 					switch(cache) {
+						case LRU:
+							cacheBuilder = new LRUCache(this.enteredMethods, cacheBlocks, cacheSize);
+							break;
+						case FIFO:
+							cacheBuilder = new FIFOCache(this.enteredMethods, cacheBlocks, cacheSize);
+							break;
 						case FIFOVARBLOCK:
 						default:
-							int cacheBlocks = super.jpfConf.getInt("symbolic.realtime.jop.cachetype.fifo.blocks", 16);
-							int cacheSize = super.jpfConf.getInt("symbolic.realtime.jop.cachetype.fifo.size", 1024);
 							cacheBuilder = new FIFOVarBlockCache(this.enteredMethods, cacheBlocks, cacheSize);
 					}
 					translator = new JOPCacheSimUppaalTranslator(this.targetSymRT, this.useProgressMeasure, this.enteredMethods, cacheBuilder);

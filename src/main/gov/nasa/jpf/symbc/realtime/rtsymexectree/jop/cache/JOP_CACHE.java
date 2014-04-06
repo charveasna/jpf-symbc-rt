@@ -8,5 +8,7 @@ package gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache;
  *
  */
 public enum JOP_CACHE {
-	FIFOVARBLOCK
+	FIFOVARBLOCK,
+	FIFO,
+	LRU
 }
