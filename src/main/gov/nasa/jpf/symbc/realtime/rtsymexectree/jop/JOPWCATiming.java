@@ -11,7 +11,6 @@ import gov.nasa.jpf.jvm.bytecode.InvokeInstruction;
 import gov.nasa.jpf.jvm.bytecode.LRETURN;
 import gov.nasa.jpf.jvm.bytecode.ReturnInstruction;
 import gov.nasa.jpf.symbc.realtime.InstructionNotImplementedException;
-import gov.nasa.jpf.symbc.realtime.UnknownReturnTypeException;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MethodInfo;
 
@@ -19,57 +18,55 @@ import gov.nasa.jpf.vm.MethodInfo;
  * @author Kasper S. Luckow <luckow@cs.aau.dk>
  *
  */
-public class JOPTiming {
-
-	protected int r;
-	protected int w;
-	protected int c;
+public class JOPWCATiming extends JOPTiming {
 	
-	public JOPTiming(int ram_cnt) {
-		r = w = ((ram_cnt > 1) ? ram_cnt - 1 : 0);
-		c = getCacheLoadCycles();
+	public JOPWCATiming(int ram_cnt) {
+		super(ram_cnt);
 	}
 	
-	public JOPTiming(int rws, int wws) {
-		r = rws;
-		w = wws;
-		c = getCacheLoadCycles();
+	public JOPWCATiming(int rws, int wws) {
+		super(rws, wws);
 	}
 	
+	@Override
 	protected int getCacheLoadCycles() {
-		//This is the cache load cycles according to JOP Handbook
-		int cws = ((r > 1) ? r : 1);
-		return cws;
+		/*
+		 * This is the WCA-tool way of setting the cache load cycles which is not in accordance with jop handbook!
+		 * NOTE: this is not documented in MS thesis!
+		 */
+		c = r > 0 ? r - 1 : 0;
+		return c;
 	}
 	
-	protected int getMethodSize(MethodInfo method) {
-		return (method.getNumberOfInstructions() + 3) / 4; // methodsize in 32bit words
-	}
-	
-	//This is the cache load time according to JOP Handbook
+	@Override
 	public int calculateCacheLoadTime(InvokeInstruction instr, MethodInfo method, boolean cacheHit) {
+		/*This is the cache load time according to the WCA tool (which does not correspond to the description in JOP Handbook)
+		 * NOTE: this is not documented in MS thesis!
+		 */
 		int n = this.getMethodSize(method);
-		int cacheLoadCost = (cacheHit) ? 4 : 6 + (n + 1) * (1 + c);
-		return ((cacheLoadCost > 37) ? cacheLoadCost - 37 : 0);
+		int cacheLoadCost = (cacheHit) ? 4 : 6 + (n + 1) * (2 + c);
+		return (cacheLoadCost >= 39) ? cacheLoadCost - 39 : 0;
 	}
 	
-	//This is the cache load time according to JOP Handbook
+	@Override
 	public int calculateCacheLoadTime(ReturnInstruction instr, MethodInfo method, boolean cacheHit) {
+		/*This is the cache load cost according to the WCA tool (which does not correspond to the description in JOP Handbook)
+		 * NOTE: this is not documented in MS thesis, but only in WCA tool!
+		 */
 		int n = this.getMethodSize(method);
-		int cacheLoadCost = (cacheHit) ? 4 : 6 + (n + 1) * (1 + c);
+		int cacheLoadCost = (cacheHit) ? 4 : 6 + (n + 1) * (2 + c);
+		
 		if (instr instanceof IRETURN || instr instanceof FRETURN
 				|| instr instanceof ARETURN) {
-			return ((cacheLoadCost > 10) ? cacheLoadCost - 10 : 0); // From JOP Handbook
+			return ((cacheLoadCost >= 8) ? cacheLoadCost - 8 : 0); // from MS thesis
 		} else if (instr instanceof LRETURN || instr instanceof DRETURN) {
-			return ((cacheLoadCost > 11) ? cacheLoadCost - 11 : 0); // From JOP Handbook
+			return ((cacheLoadCost >= 9) ? cacheLoadCost - 9 : 0); // from MS thesis
 		} else { // Must be RETURN
-			return ((cacheLoadCost > 9) ? cacheLoadCost - 9 : 0); // From JOP Handbook
+			return ((cacheLoadCost >= 7) ? cacheLoadCost - 7 : 0); // from MS thesis
 		}
 	}
 	
-	/**
-	 * Execution times are based on the listing in JOP Handbook
-	 */
+	@Override
 	public int getWCET(Instruction instruction) throws InstructionNotImplementedException {
 		int wcet = 0;
 		int opcode = instruction.getByteCode();
@@ -130,13 +127,13 @@ public class JOPTiming {
 			wcet = 3;
 			break;
 		case (18):
-			wcet = 7 + r;
+			wcet = 3 + r;
 			break;
 		case (19):
-			wcet = 8 + r;
+			wcet = 4 + r;
 			break;
 		case (20):
-			wcet = 17 + ((r > 2) ? r - 2 : 0) + ((r > 1) ? r - 1 : 0);
+			wcet = 8 + r + ((r >= 6) ? r - 2 : 4);
 			break;
 		case (21):
 			wcet = 2;
@@ -214,28 +211,28 @@ public class JOPTiming {
 			wcet = 1;
 			break;
 		case (46):
-			wcet = 7 + 3 * r;
+			wcet = 19 + r + ((r >= 6) ? r - 2 : 4);
 			break;
 		case (47):
-			wcet = 43 + 4 * r;
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (48):
-			wcet = 7 + 3 * r;
+			wcet = 19 + r + ((r >= 6) ? r - 2 : 4);
 			break;
 		case (49):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
 		case (50):
-			wcet = 7 + 3 * r;
+			wcet = 19 + r + ((r >= 6) ? r - 2 : 4);
 			break;
 		case (51):
-			wcet = 7 + 3 * r;
+			wcet = 19 + r + ((r >= 6) ? r - 2 : 4);
 			break;
 		case (52):
-			wcet = 7 + 3 * r;
+			wcet = 19 + r + ((r >= 6) ? r - 2 : 4);
 			break;
 		case (53):
-			wcet = 7 + 3 * r;
+			wcet = 19 + r + ((r >= 6) ? r - 2 : 4);
 			break;
 		case (54):
 			wcet = 2;
@@ -313,13 +310,13 @@ public class JOPTiming {
 			wcet = 1;
 			break;
 		case (79):
-			wcet = 10 + 2 * r + w;
+			wcet = 22 + w + ((r >= 6) ? r - 2 : 4);
 			break;
 		case (80):
-			wcet = 48 + 2 * r + w + ((w > 3) ? w-3 : 0); //Not sure if this is the correct execution time. It seems uncertain from JOP Handbook
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (81):
-			wcet = 10 + 2 * r + w;
+			wcet = 22 + w + ((r >= 6) ? r - 2 : 4);
 			break;
 		case (82):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
@@ -328,13 +325,13 @@ public class JOPTiming {
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
 		case (84):
-			wcet = 10 + 2 * r + w;
+			wcet = 22 + w + ((r >= 6) ? r - 2 : 4);
 			break;
 		case (85):
-			wcet = 10 + 2 * r + w;
+			wcet = 22 + w + ((r >= 6) ? r - 2 : 4);
 			break;
 		case (86):
-			wcet = 10 + 2 * r + w;
+			wcet = 22 + w + ((r >= 6) ? r - 2 : 4);
 			break;
 		case (87):
 			wcet = 1;
@@ -349,26 +346,26 @@ public class JOPTiming {
 			wcet = 5;
 			break;
 		case (91):
-			wcet = 7;
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (92):
 			wcet = 6;
 			break;
 		case (93):
-			wcet = 8;
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (94):
-			wcet = 10;
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (95):
-			wcet = 4;
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (96):
 			wcet = 1;
 			break;
 		case (97):
-			wcet = 26;
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (98):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
@@ -379,8 +376,8 @@ public class JOPTiming {
 			wcet = 1;
 			break;
 		case (101):
-			wcet = 38;
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (102):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
@@ -427,8 +424,8 @@ public class JOPTiming {
 			wcet = 4;
 			break;
 		case (117):
-			wcet = 34;
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (118):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
@@ -439,44 +436,44 @@ public class JOPTiming {
 			wcet = 1;
 			break;
 		case (121):
-			wcet = 28;
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (122):
 			wcet = 1;
 			break;
 		case (123):
-			wcet = 28;
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (124):
 			wcet = 1;
 			break;
 		case (125):
-			wcet = 28;
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (126):
 			wcet = 1;
 			break;
 		case (127):
-			wcet = 8;
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (128):
 			wcet = 1;
 			break;
 		case (129):
-			wcet = 8;
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (130):
 			wcet = 1;
 			break;
 		case (131):
-			wcet = 8;
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (132):
-			wcet = 8;
+			wcet = 11;
 			break;
 		case (133):
-			wcet = 5;
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (134):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
@@ -592,46 +589,46 @@ public class JOPTiming {
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
 		case (172):
-			wcet = 23 + ((r <= 3) ? 0 : r-3); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
+			wcet = 15 + ((r >= 7) ? r-3 : 4); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (173):
-			wcet = 25 + ((r <= 3) ? 0 : r-3); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
+			wcet = 15 + ((r >= 7) ? r-3 : 4); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (174):
-			wcet = 23 + ((r <= 3) ? 0 : r-3); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
+			wcet = 15 + ((r >= 7) ? r-3 : 4); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (175):
-			wcet = 25 + ((r <= 3) ? 0 : r-3); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
+			wcet = 15 + ((r >= 7) ? r-3 : 4); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (176):
-			wcet = 23 + ((r <= 3) ? 0 : r-3); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
+			wcet = 15 + ((r >= 7) ? r-3 : 4); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (177):
-			wcet = 21 + ((r <= 3) ? 0 : r-3); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
+			wcet = 13 + ((r >= 7) ? r-3 : 4); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (178):
-			wcet = 7 + r;
+			wcet = 4 + 2 * r;
 			break;
 		case (179):
-			wcet = 8 + w;
+			wcet = 5 + r + w;
 			break;
 		case (180):
-			wcet = 11 + 2 * r;
+			wcet = 10 + 2 * r;
 			break;
 		case (181):
 			wcet = 13 + r + w;
 			break;
 		case (182):
-			wcet = 100 + (2 * r) + ((r <= 3) ? 0 : r-3) + ((r <= 2) ? 0 : r-2); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
+			wcet = 78 + (2 * r) + ((r >= 7) ? r - 3 : 4) + ((r >= 6) ? r - 2 : 4); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (183):
-			wcet = 74 + r + ((r <= 3) ? 0 : r-3) + ((r <= 2) ? 0 : r-2); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
+			wcet = 58 + r + ((r >= 7) ? r - 3 : 4) + ((r >= 6) ? r - 2 : 4); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (184):
-			wcet = 74 + r + ((r <= 3) ? 0 : r-3) + ((r <= 2) ? 0 : r-2); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
+			wcet = 58 + r + ((r >= 7) ? r - 3 : 4) + ((r >= 6) ? r - 2 : 4); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (185):
-			wcet = 114 + (4 * r) + ((r <= 3) ? 0 : r-3) + ((r <= 2) ? 0 : r-2); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
+			wcet = 84 + (4 * r) + ((r >= 7) ? r - 3 : 4) + ((r >= 6) ? r - 2 : 4); //NOTE: This is WITHOUT the cache load cost. Add the value of calculateCacheLoadTime()
 			break;
 		case (186):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
@@ -656,7 +653,7 @@ public class JOPTiming {
 					//+ "]");
 			break;
 		case (190):
-			wcet = 6 + r;
+			wcet = 2 + r;
 			break;
 		case (191):
 			wcet=100;
@@ -673,10 +670,10 @@ public class JOPTiming {
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
 		case (194):
-			wcet = 19;
+			wcet = 9;
 			break;
 		case (195):
-			wcet = 22;
+			wcet = 11; // MS thesis p. 240 in pdf says 10/11 cycles here
 			break;
 		case (196):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
@@ -718,22 +715,22 @@ public class JOPTiming {
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
 		case (209):
-			wcet = 4 + r;
+			wcet = 3;
 			break;
 		case (210):
-			wcet = 5 + w;
+			wcet = 3;
 			break;
 		case (211):
-			wcet = 4 + r;
+			wcet = r;
 			break;
 		case (212):
-			wcet = 5 + w;
+			wcet = w + 1;
 			break;
 		case (213):
-			wcet = 3;
+			wcet = 8;
 			break;
 		case (214):
-			wcet = 3;
+			wcet = 8;
 			break;
 		case (215):
 			wcet = 3;
@@ -766,17 +763,17 @@ public class JOPTiming {
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
 		case (223):
-			wcet = 5;
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (224):
-			wcet = 12 + 2 * r;
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (225):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");
 		case (226):
-			wcet = 11 + 2 * r;
-			break;
+			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
+					+ "]");
 		case (227):
 			throw new InstructionNotImplementedException("wcet not known for [" + instruction.getMnemonic()
 					+ "]");

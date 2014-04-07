@@ -29,6 +29,8 @@ import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPCacheSimUppaalTranslator
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPUppaalTranslator;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPNodeFactory;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPTiming;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPWCATiming;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOP_TIMING_MODEL;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.AJOPCacheBuilder;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.FIFOCache;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.FIFOVarBlockCache;
@@ -61,12 +63,12 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 	 * by SPF to a timed automaton amenable to model checking using UPPAAL.
 	 * The configurations for this listener are:
 	 * 
-	 * symbolic.realtime.platform 				=	[jop|agnostic|timingdoc]	(default: jop)
-	 * symbolic.realtime.targetsymrt	 		=	[true|false]				(default: false)
-	 * symbolic.realtime.outputbasepath 		=	<output path>				(default: ./)
-	 * symbolic.realtime.optimize 				= 	[true|false]				(default: true)
-	 * symbolic.realtime.progressmeasure		= 	[true|false]				(default: true)
-	 * symbolic.realtime.generatequeries 		= 	[true|false]				(default: true)
+	 * symbolic.realtime.platform 					=	[jop|agnostic|timingdoc]	(default: jop)
+	 * symbolic.realtime.targetsymrt	 			=	[true|false]				(default: false)
+	 * symbolic.realtime.outputbasepath 			=	<output path>				(default: ./)
+	 * symbolic.realtime.optimize 					= 	[true|false]				(default: true)
+	 * symbolic.realtime.progressmeasure			= 	[true|false]				(default: true)
+	 * symbolic.realtime.generatequeries 			= 	[true|false]				(default: true)
 	 * 
 	 * If the target platform is 'timingdoc', a Timing Doc - describing the execution
 	 * times of the individual Java Bytecodes of the particular platform - must be
@@ -74,12 +76,14 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 	 * symbolic.realtime.timingdoc.path 			= 	<source path>
 	 * 
 	 * ------JOP-specific settings---------------------------------------------------------
-	 * symbolic.realtime.jop.cachepolicy		=	[miss|hit|simulate]			(default: miss)
-	 * symbolic.realtime.jop.cachetype			=	[fifovarblock|fifo|lru]		(default: fifovarblock (Applies only for "simulate" cache policy. Currently only support for fifo))
-	 * symbolic.realtime.jop.cachetype.fifo.blocks=	[:number:]					(default: 16)
-	 * symbolic.realtime.jop.cachetype.fifo.size=	[:number:]					(default: 1024)
-	 * symbolic.realtime.jop.ram_cnt			=	[:number:]					(default: 2 (applies for Cyclone EP1C6@100Mhz and 15ns SRAM))
-	 * 
+	 * symbolic.realtime.jop.cachepolicy			=	[miss|hit|simulate]			(default: miss)
+	 * symbolic.realtime.jop.timingmodel			=	[handbook|thesis]			(default: handbook)
+	 * symbolic.realtime.jop.cachetype				=	[fifovarblock|fifo|lru]		(default: fifovarblock (Applies only for "simulate" cache policy. Currently only support for fifo))
+	 * symbolic.realtime.jop.cachetype.fifo.blocks	=	[:number:]					(default: 16)
+	 * symbolic.realtime.jop.cachetype.fifo.size	=	[:number:]					(default: 1024)
+	 * symbolic.realtime.jop.ram_cnt				=	[:number:]					(default: 2 (applies for Cyclone EP1C6@100Mhz and 15ns SRAM))
+	 * symbolic.realtime.jop.rws					=	[:number:]					(will supersede *.jop.ram_cnt if set (1 applies for Cyclone EP1C6@100Mhz and 15ns SRAM))
+	 * symbolic.realtime.jop.wws					=	[:number:]					(will supersede *.jop.ram_cnt if set (1 applies for Cyclone EP1C6@100Mhz and 15ns SRAM))
 	 */
 	
 	private static final String DEF_OUTPUT_PATH = "./";
@@ -203,7 +207,6 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 	
 	private static class LoopProcessedMarker { public boolean containedBound;}
 	private void handleLoop(Instruction instr, VM vm) {
-		//Maybe this is a hack...
 		if(!instr.hasAttr(LoopProcessedMarker.class)) {
 			String fileLocation = instr.getFileLocation();
 			fileLocation = fileLocation.substring(0, fileLocation.indexOf(':'));
@@ -241,8 +244,31 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 			case "jop":
 			default:
 				CACHE_POLICY cachePol = CACHE_POLICY.valueOf(super.jpfConf.getString("symbolic.realtime.jop.cachepolicy", "miss").toUpperCase());
-				int ram_cnt = super.jpfConf.getInt("symbolic.realtime.jop.ram_cnt", 2);
-				return new JOPNodeFactory(cachePol, new JOPTiming(ram_cnt));
+				JOPTiming jopTiming;
+				JOP_TIMING_MODEL tModel = JOP_TIMING_MODEL.valueOf(super.jpfConf.getString("symbolic.realtime.jop.timingmodel", "handbook").toUpperCase());
+				if(super.jpfConf.containsKey("symbolic.realtime.jop.rws")) {
+					int readWaitStates = super.jpfConf.getInt("symbolic.realtime.jop.rws");
+					int writeWaitStates = super.jpfConf.getInt("symbolic.realtime.jop.wws");
+					switch(tModel) {
+						case THESIS:
+							jopTiming = new JOPWCATiming(readWaitStates, writeWaitStates);
+							break;
+						case HANDBOOK:
+						default:
+							jopTiming = new JOPTiming(readWaitStates, writeWaitStates);
+					}
+				} else {
+					int ram_cnt = super.jpfConf.getInt("symbolic.realtime.jop.ram_cnt", 2);
+					switch (tModel) {
+					case THESIS:
+						jopTiming = new JOPWCATiming(ram_cnt);
+						break;
+					case HANDBOOK:
+					default:
+						jopTiming = new JOPTiming(ram_cnt);
+				}
+			}
+				return new JOPNodeFactory(cachePol, jopTiming);
 		}
 	}
 

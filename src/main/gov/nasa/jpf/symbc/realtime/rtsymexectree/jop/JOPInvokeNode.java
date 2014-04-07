@@ -51,10 +51,11 @@ public class JOPInvokeNode extends RTInvokeNode implements ICacheAffectedNode {
 		return true;
 	}
 	
+	//TODO: getCacheAffectedWCET is the same in returnnode and firesporadicnode
 	@Override
 	public int getCacheAffectedWCET(boolean cacheHit) {
 		int instrWCET = this.jopTiming.getWCET(instr);
-		int cacheLoadCost = jopTiming.calculateCacheLoadTime(this.instr.getMethodInfo(), cacheHit);
-		return instrWCET + ((cacheLoadCost > 37) ? cacheLoadCost - 37 : 0); //From JOP Handbook
+		int cacheLoadCost = this.jopTiming.calculateCacheLoadTime(instr, this.instr.getMethodInfo(), cacheHit);
+		return instrWCET + cacheLoadCost; //From JOP Handbook
 	}
 }
