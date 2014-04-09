@@ -3,8 +3,12 @@
  */
 package gov.nasa.jpf.symbc.realtime.rtsymexectree.timingdoc;
 
+import gov.nasa.jpf.Config;
+import gov.nasa.jpf.symbc.realtime.RTConfig;
 import gov.nasa.jpf.symbc.realtime.RTNodeFactory;
 import gov.nasa.jpf.symbc.realtime.TimingDoc;
+import gov.nasa.jpf.symbc.realtime.TimingDocException;
+import gov.nasa.jpf.symbc.realtime.TimingDocGenerator;
 import gov.nasa.jpf.symbc.symexectree.InstrContext;
 import gov.nasa.jpf.symbc.symexectree.NodeFactory;
 import gov.nasa.jpf.symbc.symexectree.structure.IfNode;
@@ -24,6 +28,15 @@ public class TimingDocNodeFactory extends RTNodeFactory {
 	
 	public TimingDocNodeFactory(TimingDoc tDoc) {
 		this.tDoc = tDoc;
+	}
+	
+	public TimingDocNodeFactory(RTConfig rtConf) {
+		this(generateTimingDoc(rtConf));
+	}
+	
+	private static TimingDoc generateTimingDoc(RTConfig rtConf) {
+		String timingDocPath = rtConf.getValue(RTConfig.TIMING_DOC_PATH, String.class);
+		return TimingDocGenerator.generate(timingDocPath);
 	}
 	
 	@Override
@@ -60,5 +73,4 @@ public class TimingDocNodeFactory extends RTNodeFactory {
 	public InvokeNode constructFireSporadicEventNode(InstrContext instrCtx) {
 		return new TimingDocFireSporadicNode(instrCtx, this.tDoc.get(instrCtx.getInstr()));
 	}
-
 }

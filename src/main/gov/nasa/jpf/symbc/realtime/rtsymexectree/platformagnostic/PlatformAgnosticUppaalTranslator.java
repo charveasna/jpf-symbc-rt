@@ -8,8 +8,13 @@ import uppaal.Location;
 import uppaal.Transition;
 import uppaal.labels.Synchronization;
 import uppaal.labels.Synchronization.SyncType;
+import gov.nasa.jpf.Config;
 import gov.nasa.jpf.symbc.realtime.AUppaalTranslator;
+import gov.nasa.jpf.symbc.realtime.RTConfig;
+import gov.nasa.jpf.symbc.realtime.RealTimeRuntimeException;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasWCET;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.JOPUppaalTranslator;
+import gov.nasa.jpf.symbc.realtime.util.EnteredMethodsSet;
 import gov.nasa.jpf.symbc.symexectree.structure.Node;
 
 /**
@@ -22,7 +27,11 @@ public class PlatformAgnosticUppaalTranslator extends AUppaalTranslator {
 			boolean useProgressMeasure) {
 		super(targetSymRT, useProgressMeasure);
 	}
-
+	
+	public PlatformAgnosticUppaalTranslator(RTConfig rtConf) {
+		super(rtConf);
+	}
+	
 	@Override
 	protected Location decoratePlatformDependentTransition(Automaton ta, Transition uppTrans, Node treeNode) {
 		if(this.targetSymRT)

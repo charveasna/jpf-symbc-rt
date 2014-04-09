@@ -3,6 +3,7 @@
  */
 package gov.nasa.jpf.symbc.realtime.rtsymexectree.platformagnostic;
 
+import gov.nasa.jpf.Config;
 import gov.nasa.jpf.symbc.realtime.RTNodeFactory;
 import gov.nasa.jpf.symbc.symexectree.InstrContext;
 import gov.nasa.jpf.symbc.symexectree.NodeFactory;

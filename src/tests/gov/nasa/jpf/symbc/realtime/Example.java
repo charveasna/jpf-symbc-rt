@@ -18,7 +18,11 @@ public class Example  extends InvokeTest {
 	//private static final String LISTENER = "+listener = gov.nasa.jpf.symbc.symexectree.visualizer.SymExecTreeVisualizerListener";
 	private static final String OUTPUTPATH = "+symbolic.visualizer.basepath = ${jpf-symbc}/prettyprint";
 	private static final String FORMAT = "+symbolic.visualizer.outputformat = pdf";
-	private static final String CACHE = "+symbolic.realtime.jop.cachepolicy = simulate";
+	private static final String CACHE = "+symbolic.realtime.jop.cachepolicy = miss";
+	private static final String CACHETYPE = "+symbolic.realtime.jop.cachetype = fifovarblock";
+	private static final String TIMING_MODEL = "+symbolic.realtime.jop.timingmodel = thesis";
+	private static final String RWS = "+symbolic.realtime.jop.rws = 1";
+	private static final String WWS = "+symbolic.realtime.jop.wws = 2";
 	
 	//Real time config:
 	private static final String CLPATH = "+classpath=${jpf-symbc}/build";
@@ -32,8 +36,12 @@ public class Example  extends InvokeTest {
 	
 	private static final String[] JPF_ARGS = {INSN_FACTORY,
 											  OUTPUTPATH,
+											  TIMING_MODEL,
 											  FORMAT,
 											  CACHE,
+											  RWS,
+											  WWS,
+											  CACHETYPE,
 											  LISTENER, 
 											  SYM_METHOD, 
 											  CLPATH,

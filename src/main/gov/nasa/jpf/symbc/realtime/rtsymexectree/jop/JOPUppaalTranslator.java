@@ -6,10 +6,8 @@ package gov.nasa.jpf.symbc.realtime.rtsymexectree.jop;
 import uppaal.Automaton;
 import uppaal.Location;
 import uppaal.Transition;
-import uppaal.labels.Synchronization;
-import uppaal.labels.Synchronization.SyncType;
 import gov.nasa.jpf.symbc.realtime.AUppaalTranslator;
-import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasBCET;
+import gov.nasa.jpf.symbc.realtime.RTConfig;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasWCET;
 import gov.nasa.jpf.symbc.symexectree.structure.Node;
 
@@ -22,7 +20,11 @@ public class JOPUppaalTranslator extends AUppaalTranslator {
 	public JOPUppaalTranslator(boolean targetSymRT, boolean useProgressMeasure) {
 		super(targetSymRT, useProgressMeasure);
 	}
-
+	
+	public JOPUppaalTranslator(RTConfig rtConf) {
+		super(rtConf);
+	}
+	
 	@Override
 	protected Location decoratePlatformDependentTransition(Automaton ta, Transition uppTrans, Node treeNode) {
 		uppTrans.setGuard(JBC_CLOCK_N + " == " + ((IHasWCET) treeNode).getWCET());

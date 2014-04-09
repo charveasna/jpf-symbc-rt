@@ -3,6 +3,8 @@
  */
 package gov.nasa.jpf.symbc.realtime.rtsymexectree.jop;
 
+import gov.nasa.jpf.Config;
+import gov.nasa.jpf.symbc.realtime.RTConfig;
 import gov.nasa.jpf.symbc.realtime.RTNodeFactory;
 import gov.nasa.jpf.symbc.symexectree.InstrContext;
 import gov.nasa.jpf.symbc.symexectree.NodeFactory;
@@ -25,6 +27,34 @@ public class JOPNodeFactory extends RTNodeFactory {
 	public JOPNodeFactory(CACHE_POLICY cachePol, JOPTiming jopTiming) {
 		this.jopTiming = jopTiming;
 		this.cachePol = cachePol;
+	}
+	
+	public JOPNodeFactory(RTConfig rtConf, boolean useWaitStates) {
+		this(rtConf.getValue(RTConfig.JOP_CACHE_POLICY, CACHE_POLICY.class), getJOPTimingModel(rtConf, useWaitStates));
+	}
+	
+	private static JOPTiming getJOPTimingModel(RTConfig rtConf, boolean useWaitStates) {
+		JOP_TIMING_MODEL tModel = rtConf.getValue(RTConfig.JOP_TIMINGMODEL, JOP_TIMING_MODEL.class);
+		if(useWaitStates) {
+			int readWaitStates = rtConf.getValue(RTConfig.JOP_RWS, Integer.class);
+			int writeWaitStates = rtConf.getValue(RTConfig.JOP_WWS, Integer.class);
+			switch(tModel) {
+				case THESIS:
+					return new JOPWCATiming(readWaitStates, writeWaitStates);
+				case HANDBOOK:
+				default:
+					return new JOPTiming(readWaitStates, writeWaitStates);
+			}
+		} else {
+			int ram_cnt = rtConf.getValue(RTConfig.JOP_RAM_CNT, Integer.class);
+			switch (tModel) {
+			case THESIS:
+				return new JOPWCATiming(ram_cnt);
+			case HANDBOOK:
+			default:
+				return new JOPTiming(ram_cnt);
+			}
+		}
 	}
 	
 	@Override
@@ -61,5 +91,4 @@ public class JOPNodeFactory extends RTNodeFactory {
 	public InvokeNode constructFireSporadicEventNode(InstrContext instrCtx) {
 		return new JOPFireSporadicNode(instrCtx, this.jopTiming, this.cachePol);
 	}
-
 }

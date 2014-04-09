@@ -3,11 +3,19 @@
  */
 package gov.nasa.jpf.symbc.realtime.rtsymexectree.jop;
 
+import gov.nasa.jpf.Config;
 import gov.nasa.jpf.jvm.bytecode.InvokeInstruction;
 import gov.nasa.jpf.jvm.bytecode.ReturnInstruction;
+import gov.nasa.jpf.symbc.realtime.AUppaalTranslator;
 import gov.nasa.jpf.symbc.realtime.ICacheAffectedNode;
+import gov.nasa.jpf.symbc.realtime.RTConfig;
+import gov.nasa.jpf.symbc.realtime.RealTimeRuntimeException;
 import gov.nasa.jpf.symbc.realtime.UppaalTranslatorException;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.AJOPCacheBuilder;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.FIFOCache;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.FIFOVarBlockCache;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.JOP_CACHE;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.LRUCache;
 import gov.nasa.jpf.symbc.realtime.util.EnteredMethodsSet;
 import gov.nasa.jpf.symbc.symexectree.structure.Node;
 import gov.nasa.jpf.vm.Instruction;
@@ -37,6 +45,31 @@ public class JOPCacheSimUppaalTranslator extends JOPUppaalTranslator {
 		String jopCacheDecl = jopCache.buildCache();
 		super.nta.getDeclarations().add(jopCacheDecl);
 	}
+	
+	public JOPCacheSimUppaalTranslator(RTConfig rtConf, EnteredMethodsSet enteredMethods) {
+		this(rtConf.getValue(RTConfig.TARGET_SYMRT, Boolean.class), rtConf.getValue(RTConfig.PROGRESS_MEASURE
+				, Boolean.class), enteredMethods, getCacheBuilder(rtConf, enteredMethods));
+	}
+	
+	private static AJOPCacheBuilder getCacheBuilder(RTConfig rtConf, EnteredMethodsSet enteredMethods) {
+		AJOPCacheBuilder cacheBuilder;
+		JOP_CACHE cache = rtConf.getValue(RTConfig.JOP_CACHE_TYPE, JOP_CACHE.class);
+		int cacheBlocks = rtConf.getValue(RTConfig.JOP_CACHE_BLOCKS, Integer.class);
+		int cacheSize = rtConf.getValue(RTConfig.JOP_CACHE_SIZE, Integer.class);
+		switch(cache) {
+			case LRU:
+				cacheBuilder = new LRUCache(enteredMethods, cacheBlocks, cacheSize);
+				break;
+			case FIFO:
+				cacheBuilder = new FIFOCache(enteredMethods, cacheBlocks, cacheSize);
+				break;
+			case FIFOVARBLOCK:
+			default:
+				cacheBuilder = new FIFOVarBlockCache(enteredMethods, cacheBlocks, cacheSize);
+		}
+		return cacheBuilder;
+	}
+	
 	
 	@Override
 	protected Location decoratePlatformDependentTransition(Automaton ta, Transition uppTrans, Node treeNode) {

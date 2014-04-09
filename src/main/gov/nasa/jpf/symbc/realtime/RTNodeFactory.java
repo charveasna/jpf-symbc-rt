@@ -3,6 +3,7 @@
  */
 package gov.nasa.jpf.symbc.realtime;
 
+import gov.nasa.jpf.Config;
 import gov.nasa.jpf.jvm.bytecode.InvokeInstruction;
 import gov.nasa.jpf.symbc.symexectree.InstrContext;
 import gov.nasa.jpf.symbc.symexectree.NodeFactory;

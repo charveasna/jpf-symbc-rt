@@ -38,8 +38,8 @@ import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.JOP_CACHE;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.jop.cache.LRUCache;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.platformagnostic.PlatformAgnosticTimingNodeFactory;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.platformagnostic.PlatformAgnosticUppaalTranslator;
-import gov.nasa.jpf.symbc.realtime.rtsymexectree.timingdoc.TDUppaalTranslator;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.timingdoc.TimingDocNodeFactory;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.timingdoc.TimingDocUppaalTranslator;
 import gov.nasa.jpf.symbc.realtime.util.EnteredMethodsSet;
 import gov.nasa.jpf.symbc.symexectree.ASymbolicExecutionTreeListener;
 import gov.nasa.jpf.symbc.symexectree.NodeFactory;
@@ -79,36 +79,22 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 	 * symbolic.realtime.jop.cachepolicy			=	[miss|hit|simulate]			(default: miss)
 	 * symbolic.realtime.jop.timingmodel			=	[handbook|thesis]			(default: handbook)
 	 * symbolic.realtime.jop.cachetype				=	[fifovarblock|fifo|lru]		(default: fifovarblock (Applies only for "simulate" cache policy. Currently only support for fifo))
-	 * symbolic.realtime.jop.cachetype.fifo.blocks	=	[:number:]					(default: 16)
-	 * symbolic.realtime.jop.cachetype.fifo.size	=	[:number:]					(default: 1024)
+	 * symbolic.realtime.jop.cache.blocks			=	[:number:]					(default: 16)
+	 * symbolic.realtime.jop.cache.size				=	[:number:]					(default: 1024)
 	 * symbolic.realtime.jop.ram_cnt				=	[:number:]					(default: 2 (applies for Cyclone EP1C6@100Mhz and 15ns SRAM))
 	 * symbolic.realtime.jop.rws					=	[:number:]					(will supersede *.jop.ram_cnt if set (1 applies for Cyclone EP1C6@100Mhz and 15ns SRAM))
 	 * symbolic.realtime.jop.wws					=	[:number:]					(will supersede *.jop.ram_cnt if set (1 applies for Cyclone EP1C6@100Mhz and 15ns SRAM))
 	 */
 	
-	private static final String DEF_OUTPUT_PATH = "./";
-	private String targetPlatform;
-	private boolean targetSymRT;
-	private final boolean optimize;
-	private String outputBasePath;
-	private final boolean generateQueries;
-	private final boolean useProgressMeasure;
 	private int injectedSymbID;
-	private EnteredMethodsSet enteredMethods; //only used for FIFO cache simulation in JOP
+	private EnteredMethodsSet enteredMethods; //only used for cache simulation in JOP
+	private RTConfig rtConf;
 	
 	private HashSet<ElementInfo> visitedEi = new HashSet<ElementInfo>();
-	
 	private LinkedList<INTAAnalysis> ntaAnalyses;
 
 	public UppaalTranslationListener(Config conf, JPF jpf) {
 		super(conf, jpf);
-		this.targetSymRT = conf.getBoolean("symbolic.realtime.targetsymrt", false);
-		this.optimize = conf.getBoolean("symbolic.realtime.optimize", true);
-		this.outputBasePath = conf.getString("symbolic.realtime.outputbasepath", UppaalTranslationListener.DEF_OUTPUT_PATH);
-		this.generateQueries = conf.getBoolean("symbolic.realtime.generatequeries", !this.targetSymRT);
-		this.useProgressMeasure = conf.getBoolean("symbolic.realtime.progressmeasure", !this.targetSymRT);
-		if(this.useProgressMeasure && this.targetSymRT)
-			throw new RealTimeRuntimeException("Progress measures are currently not supported in SymRT");
 		this.injectedSymbID = 0;
 		this.ntaAnalyses = new LinkedList<>();
 		this.enteredMethods = new EnteredMethodsSet();
@@ -123,6 +109,22 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 					handleLoop(executedInstruction, vm);
 				}
 			}
+		}
+	}
+	
+	@Override
+	protected NodeFactory getNodeFactory() {
+		//This is a small hack because getnodefactory is called before initialising the instance variables in the constructor
+		this.rtConf = new RTConfig(super.jpfConf);
+		
+		switch(this.rtConf.getValue(RTConfig.PLATFORM, RTPLATFORM.class)) {
+			case AGNOSTIC:
+				return new PlatformAgnosticTimingNodeFactory();
+			case TIMINGDOC:
+				return new TimingDocNodeFactory(this.rtConf);
+			case JOP:
+			default:
+				return new JOPNodeFactory(this.rtConf, RTConfig.isConfSet(RTConfig.JOP_RWS, super.jpfConf));
 		}
 	}
 	
@@ -205,6 +207,15 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 		}
 	}
 	
+	@Override
+	public void methodEntered (VM vm, ThreadInfo currentThread, MethodInfo enteredMethod) {
+		if (!vm.getSystemState().isIgnored()) {
+			if(SymExecTreeUtils.isInSymbolicCallChain(enteredMethod, currentThread.getTopFrame(), this.jpfConf)) {
+				this.enteredMethods.add(enteredMethod);
+			}
+		}
+	}
+	
 	private static class LoopProcessedMarker { public boolean containedBound;}
 	private void handleLoop(Instruction instr, VM vm) {
 		if(!instr.hasAttr(LoopProcessedMarker.class)) {
@@ -230,117 +241,60 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 	}
 	
 	@Override
-	protected NodeFactory getNodeFactory() {
-		this.targetPlatform = super.jpfConf.getString("symbolic.realtime.platform", "").toLowerCase();
-		switch(this.targetPlatform) {
-			case "agnostic":
-				return new PlatformAgnosticTimingNodeFactory();
-			case "timingdoc":
-				String timingDocPath = super.jpfConf.getString("symbolic.realtime.timingdoc.path");
-				if(timingDocPath == null) 
-					throw new TimingDocException("symbolic.realtime.timingdocpath has not been set.");
-				TimingDoc tDoc = TimingDocGenerator.generate(timingDocPath);
-				return new TimingDocNodeFactory(tDoc);
-			case "jop":
-			default:
-				CACHE_POLICY cachePol = CACHE_POLICY.valueOf(super.jpfConf.getString("symbolic.realtime.jop.cachepolicy", "miss").toUpperCase());
-				JOPTiming jopTiming;
-				JOP_TIMING_MODEL tModel = JOP_TIMING_MODEL.valueOf(super.jpfConf.getString("symbolic.realtime.jop.timingmodel", "handbook").toUpperCase());
-				if(super.jpfConf.containsKey("symbolic.realtime.jop.rws")) {
-					int readWaitStates = super.jpfConf.getInt("symbolic.realtime.jop.rws");
-					int writeWaitStates = super.jpfConf.getInt("symbolic.realtime.jop.wws");
-					switch(tModel) {
-						case THESIS:
-							jopTiming = new JOPWCATiming(readWaitStates, writeWaitStates);
-							break;
-						case HANDBOOK:
-						default:
-							jopTiming = new JOPTiming(readWaitStates, writeWaitStates);
-					}
-				} else {
-					int ram_cnt = super.jpfConf.getInt("symbolic.realtime.jop.ram_cnt", 2);
-					switch (tModel) {
-					case THESIS:
-						jopTiming = new JOPWCATiming(ram_cnt);
-						break;
-					case HANDBOOK:
-					default:
-						jopTiming = new JOPTiming(ram_cnt);
-				}
-			}
-				return new JOPNodeFactory(cachePol, jopTiming);
-		}
-	}
-
-	@Override
-	public void methodEntered (VM vm, ThreadInfo currentThread, MethodInfo enteredMethod) {
-		if (!vm.getSystemState().isIgnored()) {
-			if(SymExecTreeUtils.isInSymbolicCallChain(enteredMethod, currentThread.getTopFrame(), this.jpfConf)) {
-				this.enteredMethods.add(enteredMethod);
-			}
-		}
-	}
-	
-	@Override
 	protected void processSymbExecTree(LinkedList<SymbolicExecutionTree> trees) {
 		if(trees.isEmpty())
-			throw new UppaalTranslatorException("No symbolic execution trees were generated! Have you set the target method correctly?");		
+			throw new UppaalTranslatorException("No symbolic execution trees were generated! Have you set the target method correctly?");
 		boolean reduceCacheAffectedNodes = true;
-		AUppaalTranslator translator = null;
-		switch(this.targetPlatform) {
-			case "agnostic":
-				translator = new PlatformAgnosticUppaalTranslator(this.targetSymRT, this.useProgressMeasure);
-				break;
-			case "timingdoc":
-				translator = new TDUppaalTranslator(this.targetSymRT, this.useProgressMeasure);
-				break;
-			case "jop":
-			default:
-				CACHE_POLICY cachePol = CACHE_POLICY.valueOf(super.jpfConf.getString("symbolic.realtime.jop.cachepolicy", "miss").toUpperCase());
-				if(cachePol == CACHE_POLICY.SIMULATE) {
-					AJOPCacheBuilder cacheBuilder;
-					reduceCacheAffectedNodes = false;
-					JOP_CACHE cache = JOP_CACHE.valueOf(super.jpfConf.getString("symbolic.realtime.jop.cachetype", "fifovarblock").toUpperCase());
-					int cacheBlocks = super.jpfConf.getInt("symbolic.realtime.jop.cachetype.fifo.blocks", 16);
-					int cacheSize = super.jpfConf.getInt("symbolic.realtime.jop.cachetype.fifo.size", 1024);
-					switch(cache) {
-						case LRU:
-							cacheBuilder = new LRUCache(this.enteredMethods, cacheBlocks, cacheSize);
-							break;
-						case FIFO:
-							cacheBuilder = new FIFOCache(this.enteredMethods, cacheBlocks, cacheSize);
-							break;
-						case FIFOVARBLOCK:
-						default:
-							cacheBuilder = new FIFOVarBlockCache(this.enteredMethods, cacheBlocks, cacheSize);
-					}
-					translator = new JOPCacheSimUppaalTranslator(this.targetSymRT, this.useProgressMeasure, this.enteredMethods, cacheBuilder);
-				} else {
-					translator = new JOPUppaalTranslator(this.targetSymRT, this.useProgressMeasure);
-				}
-		}
-		
+		CACHE_POLICY cachePol = this.rtConf.getValue(RTConfig.JOP_CACHE_POLICY, CACHE_POLICY.class);
+		if(cachePol == CACHE_POLICY.SIMULATE)
+			reduceCacheAffectedNodes = false;
+		AUppaalTranslator translator = this.constructUppaalTranslator(this.rtConf);
 		RTOptimizer optimizer = null;
-		if(this.optimize) {
+		if(this.rtConf.getValue(RTConfig.OPTIMIZE, Boolean.class)) {
 			optimizer = new RTOptimizer();
-			optimizer.addOptimization(new SeqInstructionReduction(this.targetSymRT, reduceCacheAffectedNodes));
+			optimizer.addOptimization(new SeqInstructionReduction(this.rtConf.getValue(RTConfig.TARGET_SYMRT, Boolean.class), reduceCacheAffectedNodes));
 		}
 		for(SymbolicExecutionTree tree : trees) {
-			if(this.optimize)
+			if(this.rtConf.getValue(RTConfig.OPTIMIZE, Boolean.class))
 				optimizer.optimize(tree);
 			NTA ntaSystem = translator.translateSymTree(tree);
+			//We write the config to the model file
+			StringBuilder configStr = new StringBuilder();
+			configStr.append("/*Configuration for this timing model:\n").append(rtConf.getAllSettings().toStringIfConfigSet(super.jpfConf)).append("\n*/");
+			ntaSystem.getDeclarations().add(configStr.toString());
+			
 			for(INTAAnalysis ntaAnalysis : this.ntaAnalyses) {
 				ntaAnalysis.conductAnalysis(ntaSystem);
 			}
 			ntaSystem.writePrettyLayoutModelToFile(this.getNTAFileName(ntaSystem, tree));
-			if(this.generateQueries)
+			if(this.rtConf.getValue(RTConfig.GENERATE_QUERIES, Boolean.class))
 				QueriesFileGenerator.writeQueriesFile(ntaSystem, getQueriesFileName(ntaSystem, tree));
 			try {
-				System.out.println("Wrote model of target method " + tree.getTargetMethod().getShortMethodName() + " to " + new File(outputBasePath).getCanonicalPath());
+				System.out.println("Wrote model of target method " + tree.getTargetMethod().getShortMethodName() + " to " + new File(this.rtConf.getValue(RTConfig.OUTPUT_BASE_PATH, String.class)).getCanonicalPath());
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	private AUppaalTranslator constructUppaalTranslator(RTConfig rtConf) {
+		AUppaalTranslator translator = null;
+		switch(this.rtConf.getValue(RTConfig.PLATFORM, RTPLATFORM.class)) {
+			case AGNOSTIC:
+				translator = new PlatformAgnosticUppaalTranslator(rtConf);
+				break;
+			case TIMINGDOC:
+				translator = new TimingDocUppaalTranslator(rtConf);
+				break;
+			case JOP:
+			default:
+				CACHE_POLICY cachePol = this.rtConf.getValue(RTConfig.JOP_CACHE_POLICY, CACHE_POLICY.class);
+				if(cachePol == CACHE_POLICY.SIMULATE)
+					translator = new JOPCacheSimUppaalTranslator(rtConf, this.enteredMethods);
+				else
+					translator = new JOPUppaalTranslator(rtConf);
+		}
+		return translator;
 	}
 	
 	private String getNTAFileName(NTA nta, SymbolicExecutionTree tree) {
@@ -351,6 +305,7 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 		return this.getBaseFileName(nta, tree) + ".q";
 	}
 	private String getBaseFileName(NTA nta, SymbolicExecutionTree tree) {
-		return outputBasePath + (outputBasePath.endsWith("/") ? "" : "/") + tree.getTargetMethod().getMethodName() + "_SPF";
+		String basePath = this.rtConf.getValue(RTConfig.OUTPUT_BASE_PATH, String.class);
+		return basePath + (basePath.endsWith("/") ? "" : "/") + tree.getTargetMethod().getMethodName() + "_SPF";
 	}
 }

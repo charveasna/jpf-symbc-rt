@@ -52,14 +52,19 @@ public abstract class AUppaalTranslator {
 	protected static final String JBC_CLOCK_N = "jbcExecTime";
 	protected NTA nta;
 	private int uniqueID;
-	
 	private Location finalLoc;
 	
 	public AUppaalTranslator(boolean targetSymRT, boolean useProgressMeasure) {
 		this.targetSymRT = targetSymRT;
 		this.generateProgressMeasure = useProgressMeasure;
+		if(this.generateProgressMeasure && this.targetSymRT)
+			throw new RealTimeRuntimeException("Progress measures are currently not supported in SymRT");
 		this.uniqueID = 0;
 		this.nta = new NTA();
+	}
+	
+	public AUppaalTranslator(RTConfig rtConf) {
+		this(rtConf.getValue(RTConfig.TARGET_SYMRT, Boolean.class), rtConf.getValue(RTConfig.PROGRESS_MEASURE, Boolean.class));
 	}
 	
 	public NTA translateSymTree(SymbolicExecutionTree tree) {

@@ -9,10 +9,14 @@ import uppaal.Transition;
 import uppaal.labels.Guard;
 import uppaal.labels.Synchronization;
 import uppaal.labels.Synchronization.SyncType;
+import gov.nasa.jpf.Config;
 import gov.nasa.jpf.symbc.realtime.AUppaalTranslator;
+import gov.nasa.jpf.symbc.realtime.RTConfig;
+import gov.nasa.jpf.symbc.realtime.RealTimeRuntimeException;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasBCET;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.IHasWCET;
 import gov.nasa.jpf.symbc.realtime.rtsymexectree.RTFireSporadicNode;
+import gov.nasa.jpf.symbc.realtime.rtsymexectree.platformagnostic.PlatformAgnosticUppaalTranslator;
 import gov.nasa.jpf.symbc.symexectree.structure.MonitorEnterNode;
 import gov.nasa.jpf.symbc.symexectree.structure.MonitorExitNode;
 import gov.nasa.jpf.symbc.symexectree.structure.Node;
@@ -21,12 +25,16 @@ import gov.nasa.jpf.symbc.symexectree.structure.Node;
  * @author Kasper S. Luckow <luckow@cs.aau.dk>
  *
  */
-public class TDUppaalTranslator extends AUppaalTranslator {
+public class TimingDocUppaalTranslator extends AUppaalTranslator {
 	
-	public TDUppaalTranslator(boolean targetSymRT, boolean useProgressMeasure) {
+	public TimingDocUppaalTranslator(boolean targetSymRT, boolean useProgressMeasure) {
 		super(targetSymRT, useProgressMeasure);
 	}
 
+	public TimingDocUppaalTranslator(RTConfig rtConf) {
+		super(rtConf);
+	}
+	
 	@Override
 	protected Location translateTreeNode(Node treeNode, Automaton ta) {
 		Location newLoc = new Location(ta, getLocationName(treeNode));
