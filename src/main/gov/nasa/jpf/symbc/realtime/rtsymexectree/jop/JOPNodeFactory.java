@@ -23,14 +23,18 @@ public class JOPNodeFactory extends RTNodeFactory {
 
 	private JOPTiming jopTiming;
 	private CACHE_POLICY cachePol;
+	private String targetMethod;
 	
-	public JOPNodeFactory(CACHE_POLICY cachePol, JOPTiming jopTiming) {
+	public JOPNodeFactory(CACHE_POLICY cachePol, JOPTiming jopTiming, String targetMethod) {
 		this.jopTiming = jopTiming;
 		this.cachePol = cachePol;
+		this.targetMethod = targetMethod;
 	}
 	
 	public JOPNodeFactory(RTConfig rtConf, boolean useWaitStates) {
-		this(rtConf.getValue(RTConfig.JOP_CACHE_POLICY, CACHE_POLICY.class), getJOPTimingModel(rtConf, useWaitStates));
+		this(rtConf.getValue(RTConfig.JOP_CACHE_POLICY, CACHE_POLICY.class), 
+			 getJOPTimingModel(rtConf, useWaitStates), 
+			 rtConf.getValue(RTConfig.SYM_TARGET_METHOD, String.class));
 	}
 	
 	private static JOPTiming getJOPTimingModel(RTConfig rtConf, boolean useWaitStates) {
@@ -74,7 +78,7 @@ public class JOPNodeFactory extends RTNodeFactory {
 
 	@Override
 	public ReturnNode constructReturnNode(InstrContext instrCtx) {
-		return new JOPReturnNode(instrCtx, this.jopTiming, this.cachePol);
+		return new JOPReturnNode(instrCtx, this.jopTiming, this.cachePol, this.targetMethod);
 	}
 
 	@Override
