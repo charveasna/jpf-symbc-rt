@@ -306,6 +306,6 @@ public class UppaalTranslationListener extends ASymbolicExecutionTreeListener {
 	}
 	private String getBaseFileName(NTA nta, SymbolicExecutionTree tree) {
 		String basePath = this.rtConf.getValue(RTConfig.OUTPUT_BASE_PATH, String.class);
-		return basePath + (basePath.endsWith("/") ? "" : "/") + tree.getTargetMethod().getMethodName() + "_SPF";
+		return basePath + (basePath.endsWith("/") ? "" : "/") + tree.getTargetMethod().getMethodName() + "_" + this.rtConf.getValue(RTConfig.PLATFORM, RTPLATFORM.class).toString().toLowerCase() + "_SPF";
 	}
 }

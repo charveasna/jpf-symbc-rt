@@ -33,7 +33,8 @@ public class RTConfig {
 	private static final String JOP_RAM_CNT_CONF_STR = "symbolic.realtime.jop.ram_cnt";
 	private static final String JOP_RWS_CONF_STR = "symbolic.realtime.jop.rws";
 	private static final String JOP_WWS_CONF_STR = "symbolic.realtime.jop.wws";
-
+	private static final String SYM_TARGET_METHOD_CONF_STR = "symbolic.method";
+	
 	public static final Setting<RTPLATFORM> PLATFORM = new Setting<>(PLATFORM_CONF_STR, RTPLATFORM.JOP);
 	public static final Setting<Boolean> TARGET_SYMRT = new Setting<>(TARGET_SYMRT_CONF_STR, false);
 	public static final Setting<String> OUTPUT_BASE_PATH = new Setting<>(OUTPUT_BASE_PATH_CONF_STR, "./");
@@ -49,6 +50,7 @@ public class RTConfig {
 	public static final Setting<Integer> JOP_RAM_CNT = new Setting<>(JOP_RAM_CNT_CONF_STR, 2);
 	public static final Setting<Integer> JOP_RWS = new Setting<>(JOP_RWS_CONF_STR, 1);
 	public static final Setting<Integer> JOP_WWS = new Setting<>(JOP_WWS_CONF_STR, 1);
+	public static final Setting<String> SYM_TARGET_METHOD = new Setting<>(SYM_TARGET_METHOD_CONF_STR, "");
 	
 	public static boolean isConfSet(Setting<?> setting, Config jpfConf) {
 		return jpfConf.hasValue(setting.getConfString());
@@ -97,6 +99,7 @@ public class RTConfig {
 		this.values.put(JOP_RAM_CNT, getIntValueFor(JOP_RAM_CNT, jpfConf));
 		this.values.put(JOP_RWS, getIntValueFor(JOP_RWS, jpfConf));
 		this.values.put(JOP_WWS, getIntValueFor(JOP_WWS, jpfConf));
+		this.values.put(SYM_TARGET_METHOD, getStringValueFor(SYM_TARGET_METHOD, jpfConf));
 	}
 	
 	public static class SettingsMap extends HashMap<Setting<?>, Object> {

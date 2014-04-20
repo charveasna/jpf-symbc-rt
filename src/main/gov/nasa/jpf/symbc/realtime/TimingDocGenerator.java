@@ -35,6 +35,7 @@ public class TimingDocGenerator {
 		try {
 			timingmodelDoc = dBuilder.parse(fXmlFile);
 		} catch (SAXException e) {
+			System.err.println("Have you set the timing doc path correctly?");
 			throw new TimingDocException(e);
 		} catch (IOException e) {
 			throw new TimingDocException(e);
